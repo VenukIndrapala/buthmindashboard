@@ -1,0 +1,36 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Supply Chain Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="style.css"></head><body>
+<div id="login"><form id="lf" class="card"><div class="logo">S</div><h2>Enter passcode</h2><input id="pw" type="password" placeholder="Passcode" autofocus><button class="btn">Unlock</button><p id="lerr"></p></form></div>
+<div id="app" hidden>
+<header><div class="brand"><div class="logo">S</div><b>Supply Chain</b></div>
+<nav><button class="on" data-p="dash">Dashboard</button><button data-p="entry">Enter Data</button></nav>
+<button id="theme" title="Toggle theme">☀</button></header>
+<main id="dash" class="page show">
+<div class="head reveal"><div><h1>Supply Chain Overview</h1><p>FY 2025/26 snapshot</p></div><span class="live"><i></i>Live · <em id="upd">--</em></span></div>
+<section class="grid">
+<div class="card hero reveal"><span>Total procurement spend · FY 2025/26</span><h2 id="v-spend">LKR 0</h2></div>
+<div class="card reveal"><span>Warehouses (WHs)</span><h2 id="v-wh">0</h2></div>
+<div class="card reveal"><span>Transport fleet vehicles</span><h2 id="v-fleet">0</h2></div>
+<div class="card reveal"><span>Production locations</span><h2 id="v-loc">0</h2><p class="sub"><b id="v-sl">0</b> Sri Lanka · <b id="v-os">0</b> Overseas</p></div>
+<div class="card wide reveal"><h3>Staff by function <em id="v-staff"></em></h3><div class="ch"><canvas id="c-staff"></canvas></div></div>
+<div class="card reveal"><h3>Sri Lanka vs overseas</h3><div class="ch"><canvas id="c-loc"></canvas></div></div>
+<div class="card full reveal"><h3>Production locations map</h3><div id="map"></div></div>
+</section></main>
+<main id="entry" class="page"><div class="head reveal"><div><h1>Enter Data</h1><p>Saved values appear on the dashboard instantly.</p></div></div>
+<section class="grid forms">
+<form class="card reveal" data-f="spend"><h3>Procurement spend (LKR)</h3><label>Total FY 2025/26<input name="spend" type="number" min="0" step="any" required></label><button class="btn">Save</button></form>
+<form class="card reveal" data-f="wh"><h3>Warehouses</h3><label>Number of WHs<input name="warehouses" type="number" min="0" required></label><button class="btn">Save</button></form>
+<form class="card reveal" data-f="fl"><h3>Fleet vehicles</h3><label>Total vehicles<input name="fleet" type="number" min="0" required></label><button class="btn">Save</button></form>
+<form class="card reveal" data-f="st"><h3>Staff per function</h3>
+<label>Procurement<input name="staff_procurement" type="number" min="0" required></label><label>Planning<input name="staff_planning" type="number" min="0" required></label><label>Warehousing<input name="staff_warehousing" type="number" min="0" required></label><label>Logistics<input name="staff_logistics" type="number" min="0" required></label><label>Transportation<input name="staff_transportation" type="number" min="0" required></label><button class="btn">Save</button></form>
+<div class="card wide reveal"><h3>Production locations</h3>
+<div class="row"><input id="ln" placeholder="Location name / city"><select id="lt"><option>Sri Lanka</option><option>Overseas</option></select><input id="la" placeholder="Lat" type="number" step="any"><input id="lo" placeholder="Lng" type="number" step="any"></div>
+<div class="row"><button class="btn ghost" id="find" type="button">Find coordinates</button><button class="btn ghost" id="add" type="button">Add</button><button class="btn" id="saveL" type="button">Save locations</button></div>
+<ul id="ll"></ul></div>
+<div class="card full reveal"><h3>Recent changes</h3><table><tbody id="hist"></tbody></table></div>
+</section></main></div><div id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="app.js"></script></body></html>
