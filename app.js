@@ -61,7 +61,7 @@ function drawMap() {
 }
 
 function drawLocs() {
-  $('#ll').innerHTML = locs.map((l, i) => `<li><span>${l.name} · ${l.type} · ${(+l.lat).toFixed(3)}, ${(+l.lng).toFixed(3)}</span><button data-i="${i}">Remove</button></li>`).join('');
+  $('#ll').innerHTML = locs.map((l, i) => `<li><span>${l.name} · ${l.type} · ${(+l.lat).toFixed(3)}, ${(+l.lng).toFixed(3)}</span><button class="mag" data-i="${i}">Remove</button></li>`).join('');
 }
 
 $('#ll').onclick = e => { if (e.target.dataset.i) { locs.splice(e.target.dataset.i, 1); drawLocs(); } };
@@ -99,3 +99,52 @@ const setTheme = t => { document.documentElement.dataset.theme = t; localStorage
 $('#theme').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
 setTheme(localStorage.getItem('t') || 'light');
 if (key) load(true).then(ok => ok ? start() : null);
+
+/* ---- Magnify animation ---- */
+document.querySelectorAll('.brand,nav button,#theme,#entry .btn,#lf .btn').forEach(el => el.classList.add('mag'));
+document.querySelectorAll('#lf .btn').forEach(el => el.classList.add('mag-solo'));
+
+function dock(box, sel, o) {
+  const max = (o && o.max) || 1.2, radius = (o && o.radius) || 95, axis = (o && o.axis) || 'x';
+  box.addEventListener('mousemove', e => box.querySelectorAll(sel).forEach(b => {
+    const r = b.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const d = axis === 'x' ? Math.abs(e.clientX - cx) : axis === 'y' ? Math.abs(e.clientY - cy) : Math.hypot(e.clientX - cx, e.clientY - cy);
+    const t = Math.max(0, 1 - d / radius);
+    b.style.scale = (1 + (max - 1) * t * t * (3 - 2 * t)).toFixed(3);
+  }));
+  box.addEventListener('mouseleave', () => box.querySelectorAll(sel).forEach(b => (b.style.scale = '')));
+}
+if (!matchMedia('(hover:none)').matches) {
+  dock($('header'), '.brand, #theme', { max: 1.1, radius: 70, axis: 'x' });
+  dock($('nav'), 'nav button', { max: 1.22, radius: 90, axis: 'x' });
+  dock($('#entry'), '#entry .mag', { max: 1.12, radius: 90, axis: 'xy' });
+}
+
+document.addEventListener('click', e => {
+  const m = e.target.closest('.mag');
+  if (!m) return;
+  m.classList.remove('pop'); void m.offsetWidth; m.classList.add('pop');
+});
+
+const lens = document.createElement('span');
+lens.className = 'lens';
+$('nav').prepend(lens);
+let hoverBtn = null;
+function lensTo() {
+  const nav = $('nav'), b = hoverBtn || nav.querySelector('button.on');
+  if (!b || !nav.offsetWidth) return;
+  const n = nav.getBoundingClientRect(), r = b.getBoundingClientRect();
+  lens.style.transform = 'translateX(' + (r.left - n.left) + 'px)';
+  lens.style.width = r.width + 'px';
+}
+$('nav').addEventListener('mousemove', e => {
+  let best = null, bd = Infinity;
+  $$('nav button').forEach(b => {
+    const r = b.getBoundingClientRect(), d = Math.abs(e.clientX - (r.left + r.width / 2));
+    if (d < bd) { bd = d; best = b; }
+  });
+  if (best !== hoverBtn) { hoverBtn = best; lensTo(); }
+});
+$('nav').addEventListener('mouseleave', () => { hoverBtn = null; lensTo(); });
+$$('nav button').forEach(b => b.addEventListener('click', () => { hoverBtn = null; setTimeout(lensTo, 0); }));
+new ResizeObserver(() => { lens.style.transition = 'none'; lensTo(); void lens.offsetWidth; lens.style.transition = ''; }).observe($('nav'));
