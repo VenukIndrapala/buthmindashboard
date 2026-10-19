@@ -1,11 +1,13 @@
-const API = 'https://script.google.com/macros/s/AKfycbzQnVGYorslhr9cS_yy7OiRFiGxwFJ3xGiBhS8V5E02I3MkPrpJIUSQ-nhuvDMzat_LZQ/exec'; // Apps Script web app URL
+const API = 'https://script.google.com/macros/s/AKfycbxpKEsY_VxH5bdOAn2h-DsBp3Nm6Qwb6wPwIONa19pbL1wWdXnyzLowRXOlnoFVCfmB/exec'; // Apps Script web app URL
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const FN = ['Procurement', 'Planning', 'Warehousing', 'Logistics', 'Transportation'];
+const COMPANIES = [['LankaTiles','LT'],['LankaWallTiles','LW'],['Rocell - Horana','RH'],['Rocell - Eheliyagoda','RE'],['Rocell Bathware','RB'],['Swisstek Aluminium','SA'],['Swisstek Ceylon','SC'],['Unidil','UN']];
+let company = sessionStorage.getItem('c') || COMPANIES[0][0];
 let key = sessionStorage.getItem('k') || '', D = null, locs = [], charts = {}, map, layer, timer;
 
 const call = async body => {
-  const r = body ? await fetch(API, { method: 'POST', body: JSON.stringify({ key, ...body }) })
-                 : await fetch(API + '?key=' + encodeURIComponent(key));
+  const r = body ? await fetch(API, { method: 'POST', body: JSON.stringify({ key, company, ...body }) })
+                 : await fetch(API + '?key=' + encodeURIComponent(key) + '&company=' + encodeURIComponent(company));
   return r.json();
 };
 const toast = t => { const e = $('#toast'); e.textContent = t; e.classList.add('on'); setTimeout(() => e.classList.remove('on'), 2400); };
@@ -17,7 +19,9 @@ const count = (el, to, fmt = v => v.toLocaleString()) => {
 
 async function load(first) {
   try {
+    const c0 = company;
     const d = await call();
+    if (c0 !== company) return false;
     if (d.error) return false;
     D = d; locs = d.locations.map(l => ({ ...l })); render(); return true;
   } catch (e) { if (!first) console.warn(e); return false; }
@@ -148,3 +152,24 @@ $('nav').addEventListener('mousemove', e => {
 $('nav').addEventListener('mouseleave', () => { hoverBtn = null; lensTo(); });
 $$('nav button').forEach(b => b.addEventListener('click', () => { hoverBtn = null; setTimeout(lensTo, 0); }));
 new ResizeObserver(() => { lens.style.transition = 'none'; lensTo(); void lens.offsetWidth; lens.style.transition = ''; }).observe($('nav'));
+
+/* ---- Company sidebar ---- */
+const side = $('#side');
+side.innerHTML = COMPANIES.map(c => `<button class="mag" data-c="${c[0]}" data-name="${c[0]}" title="${c[0]}">${c[1]}</button>`).join('');
+function setCompanyUI() {
+  $$('#side button').forEach(b => b.classList.toggle('on', b.dataset.c === company));
+  $('#dash h1').textContent = company;
+  $('#dash .head p').textContent = 'Supply Chain Overview · FY 2025/26';
+  $('#entry .head p').textContent = 'Entering data for ' + company + '. Saved values appear on its dashboard instantly.';
+}
+side.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b || b.dataset.c === company) return;
+  company = b.dataset.c;
+  sessionStorage.setItem('c', company);
+  setCompanyUI();
+  $('#upd').textContent = 'Loading…';
+  load();
+});
+if (!matchMedia('(hover:none)').matches) dock(side, '#side button', { max: 1.2, radius: 70, axis: 'y' });
+setCompanyUI();
