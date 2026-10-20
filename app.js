@@ -1,8 +1,9 @@
-const API = 'https://script.google.com/macros/s/AKfycbxpKEsY_VxH5bdOAn2h-DsBp3Nm6Qwb6wPwIONa19pbL1wWdXnyzLowRXOlnoFVCfmB/exec'; // Apps Script web app URL
+const API = 'https://script.google.com/macros/s/AKfycbx5qjUu2iMBPwE-5SbSWUe4pcg8_MX9K62MJ3hrfaJWt7d2ywsdbYtH3zpeuQwpJe2B-Q/exec'; // Apps Script web app URL
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const FN = ['Procurement', 'Planning', 'Warehousing', 'Logistics', 'Transportation'];
 const COMPANIES = [['LankaTiles','LT'],['LankaWallTiles','LW'],['Rocell - Horana','RH'],['Rocell - Eheliyagoda','RE'],['Rocell Bathware','RB'],['Swisstek Aluminium','SA'],['Swisstek Ceylon','SC'],['Unidil','UN']];
 let company = sessionStorage.getItem('c') || COMPANIES[0][0];
+let ACCESS = [];
 let key = sessionStorage.getItem('k') || '', D = null, locs = [], charts = {}, map, layer, timer;
 
 const call = async body => {
@@ -40,7 +41,7 @@ function render() {
   $$('#entry input[name]').forEach(i => { if (document.activeElement !== i) i.value = c[i.name] ?? ''; });
   drawLocs();
   $('#hist').innerHTML = D.history.slice(0, 12).map(h =>
-    `<tr><td>${new Date(h.time).toLocaleString()}</td><td>${h.metric}</td><td>${h.value}</td></tr>`).join('');
+    `<tr><td>${new Date(h.time).toLocaleString()}</td><td>${h.metric}</td><td>${h.by || ''}</td><td>${h.value}</td></tr>`).join('');
 }
 
 function drawCharts(st, sl, os) {
@@ -88,7 +89,7 @@ $$('form[data-f]').forEach(f => f.onsubmit = async e => {
 
 $('#lf').onsubmit = async e => {
   e.preventDefault(); key = $('#pw').value;
-  if (await load(true)) { sessionStorage.setItem('k', key); start(); } else $('#lerr').textContent = 'Wrong passcode or connection problem';
+  if (await enter()) { sessionStorage.setItem('k', key); start(); } else $('#lerr').textContent = 'Wrong passcode or connection problem';
 };
 function start() {
   $('#login').hidden = true; $('#app').hidden = false; clearInterval(timer); timer = setInterval(load, 30000); setTimeout(() => map && map.invalidateSize(), 200);
@@ -102,7 +103,7 @@ const setTheme = t => { document.documentElement.dataset.theme = t; localStorage
   Object.values(charts).forEach(c => c.destroy()); charts = {}; if (D) render(); };
 $('#theme').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
 setTheme(localStorage.getItem('t') || 'light');
-if (key) load(true).then(ok => ok ? start() : null);
+if (key) enter().then(ok => (ok ? start() : null));
 
 /* ---- Magnify animation ---- */
 document.querySelectorAll('.brand,nav button,#theme,#entry .btn,#lf .btn').forEach(el => el.classList.add('mag'));
@@ -155,7 +156,23 @@ new ResizeObserver(() => { lens.style.transition = 'none'; lensTo(); void lens.o
 
 /* ---- Company sidebar ---- */
 const side = $('#side');
-side.innerHTML = COMPANIES.map(c => `<button class="mag" data-c="${c[0]}" data-name="${c[0]}" title="${c[0]}">${c[1]}</button>`).join('');
+function buildSide() {
+  side.innerHTML = COMPANIES.filter(c => ACCESS.indexOf(c[0]) >= 0).map(c => `<button class="mag" data-c="${c[0]}" data-name="${c[0]}" title="${c[0]}">${c[1]}</button>`).join('');
+  $('#app').classList.toggle('solo', ACCESS.length < 2);
+  side.hidden = ACCESS.length < 2;
+  setCompanyUI();
+}
+async function enter() {
+  try {
+    const info = await (await fetch(API + '?key=' + encodeURIComponent(key))).json();
+    if (info.error || !info.access || !info.access.length) return false;
+    ACCESS = info.access;
+    if (ACCESS.indexOf(company) < 0) company = ACCESS[0];
+    sessionStorage.setItem('c', company);
+    buildSide();
+    return await load(true);
+  } catch (e) { return false; }
+}
 function setCompanyUI() {
   $$('#side button').forEach(b => b.classList.toggle('on', b.dataset.c === company));
   $('#dash h1').textContent = company;
