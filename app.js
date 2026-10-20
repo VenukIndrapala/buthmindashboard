@@ -2,6 +2,7 @@ const API = 'https://script.google.com/macros/s/AKfycbx5qjUu2iMBPwE-5SbSWUe4pcg8
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const FN = ['Procurement', 'Planning', 'Warehousing', 'Logistics', 'Transportation'];
 const COMPANIES = [['LankaTiles','LT'],['LankaWallTiles','LW'],['Rocell - Horana','RH'],['Rocell - Eheliyagoda','RE'],['Rocell Bathware','RB'],['Swisstek Aluminium','SA'],['Swisstek Ceylon','SC'],['Unidil','UN']];
+const RED = '#C51D34', NOIR = '#2E2E30', GREY = '#808080', GRID = '#e6e6e8';
 let company = sessionStorage.getItem('c') || COMPANIES[0][0];
 let ACCESS = [];
 let key = sessionStorage.getItem('k') || '', D = null, locs = [], charts = {}, map, layer, timer;
@@ -45,12 +46,11 @@ function render() {
 }
 
 function drawCharts(st, sl, os) {
-  const dark = document.documentElement.dataset.theme === 'dark', tx = dark ? '#8e8e99' : '#85858f', gr = dark ? '#2a2a31' : '#ececf0';
-  Chart.defaults.color = tx;
+  Chart.defaults.color = GREY;
   const mk = (id, cfg) => { if (charts[id]) { charts[id].data = cfg.data; charts[id].update(); } else charts[id] = new Chart($('#' + id), cfg); };
-  mk('c-staff', { type: 'bar', data: { labels: FN, datasets: [{ data: st, backgroundColor: '#f26a2e', borderRadius: 10 }] },
-    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: gr }, beginAtZero: true }, x: { grid: { display: false } } } } });
-  mk('c-loc', { type: 'doughnut', data: { labels: ['Sri Lanka', 'Overseas'], datasets: [{ data: [sl, os], backgroundColor: ['#f26a2e', dark ? '#f4f4f6' : '#111'], borderWidth: 0 }] },
+  mk('c-staff', { type: 'bar', data: { labels: FN, datasets: [{ data: st, backgroundColor: RED, borderRadius: 10 }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: GRID }, beginAtZero: true }, x: { grid: { display: false } } } } });
+  mk('c-loc', { type: 'doughnut', data: { labels: ['Sri Lanka', 'Overseas'], datasets: [{ data: [sl, os], backgroundColor: [RED, NOIR], borderWidth: 0 }] },
     options: { maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom' } } } });
 }
 
@@ -59,7 +59,7 @@ function drawMap() {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map); layer = L.layerGroup().addTo(map); }
   layer.clearLayers();
   const pts = D.locations.filter(l => l.lat !== '' && l.lng !== '');
-  pts.forEach(l => L.circleMarker([l.lat, l.lng], { radius: 9, color: '#fff', weight: 2, fillColor: l.type === 'Sri Lanka' ? '#f26a2e' : '#111', fillOpacity: 1 })
+  pts.forEach(l => L.circleMarker([l.lat, l.lng], { radius: 9, color: '#fff', weight: 2, fillColor: l.type === 'Sri Lanka' ? RED : NOIR, fillOpacity: 1 })
     .bindTooltip(`${l.name} (${l.type})`).addTo(layer));
   if (pts.length) map.fitBounds(pts.map(l => [l.lat, l.lng]), { padding: [40, 40], maxZoom: 6 });
   setTimeout(() => map.invalidateSize(), 100);
@@ -99,14 +99,10 @@ $$('nav button').forEach(b => b.onclick = () => {
   $$('.page').forEach(p => p.classList.remove('show')); void document.body.offsetWidth; $('#' + b.dataset.p).classList.add('show');
   if (map) setTimeout(() => map.invalidateSize(), 150);
 });
-const setTheme = t => { document.documentElement.dataset.theme = t; localStorage.setItem('t', t); $('#theme').textContent = t === 'dark' ? '☾' : '☀';
-  Object.values(charts).forEach(c => c.destroy()); charts = {}; if (D) render(); };
-$('#theme').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-setTheme(localStorage.getItem('t') || 'light');
 if (key) enter().then(ok => (ok ? start() : null));
 
 /* ---- Magnify animation ---- */
-document.querySelectorAll('.brand,nav button,#theme,#entry .btn,#lf .btn').forEach(el => el.classList.add('mag'));
+document.querySelectorAll('.brand,nav button,#entry .btn,#lf .btn').forEach(el => el.classList.add('mag'));
 document.querySelectorAll('#lf .btn').forEach(el => el.classList.add('mag-solo'));
 
 function dock(box, sel, o) {
@@ -120,7 +116,7 @@ function dock(box, sel, o) {
   box.addEventListener('mouseleave', () => box.querySelectorAll(sel).forEach(b => (b.style.scale = '')));
 }
 if (!matchMedia('(hover:none)').matches) {
-  dock($('header'), '.brand, #theme', { max: 1.1, radius: 70, axis: 'x' });
+  dock($('header'), '.brand', { max: 1.1, radius: 70, axis: 'x' });
   dock($('nav'), 'nav button', { max: 1.22, radius: 90, axis: 'x' });
   dock($('#entry'), '#entry .mag', { max: 1.12, radius: 90, axis: 'xy' });
 }
