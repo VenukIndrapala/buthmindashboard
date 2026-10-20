@@ -1,7 +1,8 @@
 const API = 'https://script.google.com/macros/s/AKfycbx5qjUu2iMBPwE-5SbSWUe4pcg8_MX9K62MJ3hrfaJWt7d2ywsdbYtH3zpeuQwpJe2B-Q/exec'; // Apps Script web app URL
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const FN = ['Procurement', 'Planning', 'Warehousing', 'Logistics', 'Transportation'];
-const COMPANIES = [['LankaTiles','LT'],['LankaWallTiles','LW'],['Rocell - Horana','RH'],['Rocell - Eheliyagoda','RE'],['Rocell Bathware','RB'],['Swisstek Aluminium','SA'],['Swisstek Ceylon','SC'],['Unidil','UN']];
+// [company name, initials, logo file (optional)]
+const COMPANIES = [['LankaTiles','LT'],['LankaWallTiles','LW'],['Rocell - Horana','RH','logos/rocell.png'],['Rocell - Eheliyagoda','RE','logos/rocell.png'],['Rocell Bathware','RB','logos/rocell-bathware.png'],['Swisstek Aluminium','SA','logos/swisstek-aluminium.png'],['Swisstek Ceylon','SC','logos/swisstek-ceylon.png'],['Unidil','UN','logos/unidil.png']];
 const RED = '#C51D34', NOIR = '#2E2E30', GREY = '#808080', GRID = '#e6e6e8';
 let company = sessionStorage.getItem('c') || COMPANIES[0][0];
 let ACCESS = [];
@@ -153,7 +154,8 @@ new ResizeObserver(() => { lens.style.transition = 'none'; lensTo(); void lens.o
 /* ---- Company sidebar ---- */
 const side = $('#side');
 function buildSide() {
-  side.innerHTML = COMPANIES.filter(c => ACCESS.indexOf(c[0]) >= 0).map(c => `<button class="mag" data-c="${c[0]}" data-name="${c[0]}" title="${c[0]}">${c[1]}</button>`).join('');
+  side.innerHTML = COMPANIES.filter(c => ACCESS.indexOf(c[0]) >= 0).map(c => `<button class="mag${c[2] ? ' lg' : ''}" data-c="${c[0]}" data-ini="${c[1]}" data-name="${c[0]}" title="${c[0]}">${c[2] ? `<img src="${c[2]}" alt="${c[1]}">` : c[1]}</button>`).join('');
+  side.querySelectorAll('img').forEach(im => im.onerror = () => { const b = im.parentNode; b.classList.remove('lg'); b.textContent = b.dataset.ini; });
   $('#app').classList.toggle('solo', ACCESS.length < 2);
   side.hidden = ACCESS.length < 2;
   setCompanyUI();
@@ -169,8 +171,16 @@ async function enter() {
     return await load(true);
   } catch (e) { return false; }
 }
+function setLogo(c, el) {
+  el.classList.remove('ini'); el.textContent = '';
+  const ini = () => { el.classList.add('ini'); el.textContent = c[1]; };
+  if (!c[2]) return ini();
+  const im = new Image(); im.alt = c[0] + ' logo'; im.onerror = ini; im.src = c[2]; el.appendChild(im);
+}
 function setCompanyUI() {
   $$('#side button').forEach(b => b.classList.toggle('on', b.dataset.c === company));
+  const co = COMPANIES.find(c => c[0] === company);
+  if (co) $$('.clogo').forEach(el => setLogo(co, el));
   $('#dash h1').textContent = company;
   $('#dash .head p').textContent = 'Supply Chain Overview · FY 2025/26';
   $('#entry .head p').textContent = 'Entering data for ' + company + '. Saved values appear on its dashboard instantly.';
