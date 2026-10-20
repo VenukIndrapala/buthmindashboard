@@ -10,7 +10,7 @@ nav button.on{background:var(--on);color:#fff}
 .ttl{display:flex;align-items:center;gap:16px;margin:0 0 14px;min-height:80px}
 .clogo{display:flex;align-items:center;justify-content:center;flex:none;box-sizing:border-box;height:80px;padding:12px 24px;background:#fff;border-radius:20px;box-shadow:0 2px 14px rgba(0,0,0,.04)}
 .clogo:empty{display:none}
-.clogo img{display:block;height:56px;width:auto;max-width:190px;object-fit:contain}
+.clogo img{display:block;height:56px;width:auto;max-width:270px;object-fit:contain}
 .clogo.ini{width:60px;height:60px;padding:0;border-radius:50%;background:var(--or);color:#fff;font-weight:700;font-size:18px}
 .ttl.has-logo .cname{display:none}
 .page{display:none;padding:8px 28px 40px;max-width:1200px;margin:auto}.page.show{display:block}
