@@ -5,7 +5,8 @@ const FN = ['Procurement', 'Planning', 'Warehousing', 'Logistics', 'Transportati
 const LOGO_DIRS = ['', 'logos/'];
 const WA = n => 'WhatsApp Image 2026-10-20 at 13.14.01' + n + '.jpeg'; // original file names from the zip
 // [company name, initials, logo file names to try (optional)]
-const COMPANIES = [['LankaTiles','LT'],['LankaWallTiles','LW'],
+// 4th item true = show the logo in the page heading only (wide logos are unreadable in the small sidebar buttons)
+const COMPANIES = [['LankaTiles','LT',['lankatiles.png'],true],['LankaWallTiles','LW',['lankatiles.png'],true],
   ['Rocell - Horana','RH',[WA(' (4)'),'rocell.png']],['Rocell - Eheliyagoda','RE',[WA(' (4)'),'rocell.png']],
   ['Rocell Bathware','RB',[WA(' (3)'),'rocell-bathware.png']],['Swisstek Aluminium','SA',[WA(' (2)'),'swisstek-aluminium.png']],
   ['Swisstek Ceylon','SC',[WA(' (1)'),'swisstek-ceylon.png']],['Unidil','UN',[WA(' (5)'),'unidil.png']]];
@@ -188,7 +189,7 @@ function buildSide() {
   side.innerHTML = COMPANIES.filter(c => ACCESS.indexOf(c[0]) >= 0).map(c => `<button class="mag" data-c="${c[0]}" data-name="${c[0]}" title="${c[0]}">${c[1]}</button>`).join('');
   side.querySelectorAll('button').forEach(b => {
     const c = COMPANIES.find(x => x[0] === b.dataset.c);
-    if (c && c[2]) getLogo(c).then(src => { if (!src) return; const im = new Image(); im.alt = c[1]; im.src = src; b.textContent = ''; b.classList.add('lg'); b.appendChild(im); });
+    if (c && c[2] && !c[3]) getLogo(c).then(src => { if (!src) return; const im = new Image(); im.alt = c[1]; im.src = src; b.textContent = ''; b.classList.add('lg'); b.appendChild(im); });
   });
   $('#app').classList.toggle('solo', ACCESS.length < 2);
   side.hidden = ACCESS.length < 2;
