@@ -239,8 +239,16 @@ side.addEventListener('click', e => {
   company = b.dataset.c;
   sessionStorage.setItem('c', company);
   setCompanyUI();
+  replay();
   $('#upd').textContent = 'Loading…';
   load();
 });
 if (!matchMedia('(hover:none)').matches) dock(side, '#side button', { max: 1.1, radius: 60, axis: 'y' });
 setCompanyUI();
+
+/* ---- Replays the slide-in animation (used when switching company) ---- */
+function replay() {
+  const p = $('.page.show'); if (!p) return;
+  p.classList.remove('show'); void p.offsetWidth; p.classList.add('show');
+  if (map) setTimeout(() => map.invalidateSize(), 150);
+}
