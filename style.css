@@ -66,3 +66,5 @@ nav{position:relative}
 #side button:hover::before{opacity:1;transform:translateY(-50%)}
 @media(min-width:861px){.page{padding-left:96px}}
 @media(max-width:860px){#side{position:static;transform:none;flex-direction:row;overflow-x:auto;margin:0 12px 8px;border-radius:16px}#side button::before{display:none}}
+
+#app.solo .page{padding-left:28px}
