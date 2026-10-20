@@ -5,9 +5,10 @@ const FN = ['Procurement', 'Planning', 'Warehousing', 'Logistics', 'Transportati
 const LOGO_DIRS = ['', 'logos/'];
 const WA = n => 'WhatsApp Image 2026-10-20 at 13.14.01' + n + '.jpeg'; // original file names from the zip
 // [company name, initials, logo file names to try (optional)]
-// 4th item (optional) = different file(s) for the small sidebar button, shown with the initials underneath
+// 4th item (optional) = different file(s) for the small sidebar button (null = same as the heading logo)
+// 5th item (optional) = small text under the sidebar logo (defaults to the initials when a 4th item is given)
 const COMPANIES = [['LankaTiles','LT',['lankatiles.png'],['lankatiles-icon.png']],['LankaWallTiles','LW',['lankatiles.png'],['lankatiles-icon.png']],
-  ['Rocell - Horana','RH',[WA(' (4)'),'rocell.png']],['Rocell - Eheliyagoda','RE',[WA(' (4)'),'rocell.png']],
+  ['Rocell - Horana','RH',[WA(' (4)'),'rocell.png'],null,'Horana'],['Rocell - Eheliyagoda','RE',[WA(' (4)'),'rocell.png'],null,'Eheliyagoda'],
   ['Rocell Bathware','RB',[WA(' (3)'),'rocell-bathware.png']],['Swisstek Aluminium','SA',[WA(' (2)'),'swisstek-aluminium.png']],
   ['Swisstek Ceylon','SC',[WA(' (1)'),'swisstek-ceylon.png']],['Unidil','UN',[WA(' (5)'),'unidil.png']]];
 
@@ -193,7 +194,8 @@ function buildSide() {
     if (c && c[2]) getLogo(c, true).then(src => {
       if (!src) return;
       const im = new Image(); im.alt = c[1]; im.src = src; b.textContent = ''; b.classList.add('lg'); b.appendChild(im);
-      if (c[3]) { b.classList.add('cap'); const t = document.createElement('i'); t.textContent = c[1]; b.appendChild(t); }
+      const cap = c[4] || (c[3] ? c[1] : '');
+      if (cap) { b.classList.add('cap'); const t = document.createElement('i'); t.textContent = cap; b.appendChild(t); }
     });
   });
   $('#app').classList.toggle('solo', ACCESS.length < 2);
