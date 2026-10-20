@@ -15,8 +15,8 @@ nav button.on{background:var(--on);color:#fff}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 .card{background:var(--card);border-radius:22px;padding:22px;box-shadow:0 2px 14px rgba(0,0,0,.04);transition:transform .25s,box-shadow .25s}
 .card:hover{transform:translateY(-5px);box-shadow:0 12px 30px rgba(0,0,0,.1)}
-.card span{color:var(--mu);font-size:13px}.card h2{margin:10px 0 0;font-size:34px}.card h3{margin:0 0 14px;font-size:16px}.card h3 em{color:var(--mu);font-style:normal;font-weight:400;margin-left:6px}
-.sub{margin:6px 0 0;color:var(--mu);font-size:13px}.sub b{color:var(--or)}
+.card span{color:var(--tx);font-size:17px;font-weight:600}.card h2{margin:10px 0 0;font-size:34px}.card h3{margin:0 0 14px;font-size:20px}.card h3 em{color:var(--mu);font-style:normal;font-weight:400;margin-left:6px}
+.sub{margin:8px 0 0;color:var(--mu);font-size:15px}.sub b{color:var(--or)}
 .hero{grid-column:span 4;background:linear-gradient(135deg,var(--or),var(--or2));color:#fff;position:relative;overflow:hidden}.hero span{color:#ffe3d6}.hero h2{font-size:46px}
 .hero:after{content:"";position:absolute;right:-60px;top:-80px;width:280px;height:280px;border-radius:50%;background:rgba(255,255,255,.15);animation:float 6s ease-in-out infinite}
 .wide{grid-column:span 3}.full{grid-column:span 4}.ch{height:230px}#map{height:340px;border-radius:14px;z-index:0}
