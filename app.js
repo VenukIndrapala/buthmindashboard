@@ -5,8 +5,8 @@ const FN = ['Procurement', 'Planning', 'Warehousing', 'Logistics', 'Transportati
 const LOGO_DIRS = ['', 'logos/'];
 const WA = n => 'WhatsApp Image 2026-10-20 at 13.14.01' + n + '.jpeg'; // original file names from the zip
 // [company name, initials, logo file names to try (optional)]
-// 4th item true = show the logo in the page heading only (wide logos are unreadable in the small sidebar buttons)
-const COMPANIES = [['LankaTiles','LT',['lankatiles.png'],true],['LankaWallTiles','LW',['lankatiles.png'],true],
+// 4th item (optional) = different file(s) for the small sidebar button, shown with the initials underneath
+const COMPANIES = [['LankaTiles','LT',['lankatiles.png'],['lankatiles-icon.png']],['LankaWallTiles','LW',['lankatiles.png'],['lankatiles-icon.png']],
   ['Rocell - Horana','RH',[WA(' (4)'),'rocell.png']],['Rocell - Eheliyagoda','RE',[WA(' (4)'),'rocell.png']],
   ['Rocell Bathware','RB',[WA(' (3)'),'rocell-bathware.png']],['Swisstek Aluminium','SA',[WA(' (2)'),'swisstek-aluminium.png']],
   ['Swisstek Ceylon','SC',[WA(' (1)'),'swisstek-ceylon.png']],['Unidil','UN',[WA(' (5)'),'unidil.png']]];
@@ -30,9 +30,10 @@ const trimLogo = im => {
   } catch (e) { return im.src; }
 };
 const LOGOS = {};
-const getLogo = c => LOGOS[c[0]] || (LOGOS[c[0]] = (async () => {
-  if (!c[2]) return null;
-  for (const f of c[2]) for (const dir of LOGO_DIRS) { const im = await tryLoad(dir + encodeURI(f)); if (im) return trimLogo(im); }
+const getLogo = (c, small) => LOGOS[c[0] + (small ? '#s' : '')] || (LOGOS[c[0] + (small ? '#s' : '')] = (async () => {
+  const files = small && c[3] ? c[3] : c[2];
+  if (!files) return null;
+  for (const f of files) for (const dir of LOGO_DIRS) { const im = await tryLoad(dir + encodeURI(f)); if (im) return trimLogo(im); }
   return null;
 })());
 const RED = '#C51D34', NOIR = '#2E2E30', GREY = '#808080', GRID = '#e6e6e8';
@@ -189,7 +190,11 @@ function buildSide() {
   side.innerHTML = COMPANIES.filter(c => ACCESS.indexOf(c[0]) >= 0).map(c => `<button class="mag" data-c="${c[0]}" data-name="${c[0]}" title="${c[0]}">${c[1]}</button>`).join('');
   side.querySelectorAll('button').forEach(b => {
     const c = COMPANIES.find(x => x[0] === b.dataset.c);
-    if (c && c[2] && !c[3]) getLogo(c).then(src => { if (!src) return; const im = new Image(); im.alt = c[1]; im.src = src; b.textContent = ''; b.classList.add('lg'); b.appendChild(im); });
+    if (c && c[2]) getLogo(c, true).then(src => {
+      if (!src) return;
+      const im = new Image(); im.alt = c[1]; im.src = src; b.textContent = ''; b.classList.add('lg'); b.appendChild(im);
+      if (c[3]) { b.classList.add('cap'); const t = document.createElement('i'); t.textContent = c[1]; b.appendChild(t); }
+    });
   });
   $('#app').classList.toggle('solo', ACCESS.length < 2);
   side.hidden = ACCESS.length < 2;
