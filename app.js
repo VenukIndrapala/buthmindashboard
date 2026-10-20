@@ -1,8 +1,39 @@
 const API = 'https://script.google.com/macros/s/AKfycbx5qjUu2iMBPwE-5SbSWUe4pcg8_MX9K62MJ3hrfaJWt7d2ywsdbYtH3zpeuQwpJe2B-Q/exec'; // Apps Script web app URL
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const FN = ['Procurement', 'Planning', 'Warehousing', 'Logistics', 'Transportation'];
-// [company name, initials, logo file (optional)]
-const COMPANIES = [['LankaTiles','LT'],['LankaWallTiles','LW'],['Rocell - Horana','RH','logos/rocell.png'],['Rocell - Eheliyagoda','RE','logos/rocell.png'],['Rocell Bathware','RB','logos/rocell-bathware.png'],['Swisstek Aluminium','SA','logos/swisstek-aluminium.png'],['Swisstek Ceylon','SC','logos/swisstek-ceylon.png'],['Unidil','UN','logos/unidil.png']];
+// Folders searched for logo files, relative to index.html ('' = same folder as index.html). Add your folder here if needed.
+const LOGO_DIRS = ['', 'logos/'];
+const WA = n => 'WhatsApp Image 2026-10-20 at 13.14.01' + n + '.jpeg'; // original file names from the zip
+// [company name, initials, logo file names to try (optional)]
+const COMPANIES = [['LankaTiles','LT'],['LankaWallTiles','LW'],
+  ['Rocell - Horana','RH',[WA(' (4)'),'rocell.png']],['Rocell - Eheliyagoda','RE',[WA(' (4)'),'rocell.png']],
+  ['Rocell Bathware','RB',[WA(' (3)'),'rocell-bathware.png']],['Swisstek Aluminium','SA',[WA(' (2)'),'swisstek-aluminium.png']],
+  ['Swisstek Ceylon','SC',[WA(' (1)'),'swisstek-ceylon.png']],['Unidil','UN',[WA(' (5)'),'unidil.png']]];
+
+/* ---- Logo loading: finds the file, trims white margins in the browser ---- */
+const tryLoad = src => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+const trimLogo = im => {
+  try {
+    const w = im.naturalWidth, h = im.naturalHeight, cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const g = cv.getContext('2d'); g.drawImage(im, 0, 0);
+    const d = g.getImageData(0, 0, w, h).data; let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      if (d[i + 3] > 0 && (255 - d[i] > 30 || 255 - d[i + 1] > 30 || 255 - d[i + 2] > 30)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    }
+    if (x1 < x0) return im.src;
+    const p = 3; x0 = Math.max(x0 - p, 0); y0 = Math.max(y0 - p, 0); x1 = Math.min(x1 + p, w - 1); y1 = Math.min(y1 + p, h - 1);
+    const c2 = document.createElement('canvas'); c2.width = x1 - x0 + 1; c2.height = y1 - y0 + 1;
+    c2.getContext('2d').drawImage(im, x0, y0, c2.width, c2.height, 0, 0, c2.width, c2.height);
+    return c2.toDataURL('image/png');
+  } catch (e) { return im.src; }
+};
+const LOGOS = {};
+const getLogo = c => LOGOS[c[0]] || (LOGOS[c[0]] = (async () => {
+  if (!c[2]) return null;
+  for (const f of c[2]) for (const dir of LOGO_DIRS) { const im = await tryLoad(dir + encodeURI(f)); if (im) return trimLogo(im); }
+  return null;
+})());
 const RED = '#C51D34', NOIR = '#2E2E30', GREY = '#808080', GRID = '#e6e6e8';
 let company = sessionStorage.getItem('c') || COMPANIES[0][0];
 let ACCESS = [];
@@ -154,8 +185,11 @@ new ResizeObserver(() => { lens.style.transition = 'none'; lensTo(); void lens.o
 /* ---- Company sidebar ---- */
 const side = $('#side');
 function buildSide() {
-  side.innerHTML = COMPANIES.filter(c => ACCESS.indexOf(c[0]) >= 0).map(c => `<button class="mag${c[2] ? ' lg' : ''}" data-c="${c[0]}" data-ini="${c[1]}" data-name="${c[0]}" title="${c[0]}">${c[2] ? `<img src="${c[2]}" alt="${c[1]}">` : c[1]}</button>`).join('');
-  side.querySelectorAll('img').forEach(im => im.onerror = () => { const b = im.parentNode; b.classList.remove('lg'); b.textContent = b.dataset.ini; });
+  side.innerHTML = COMPANIES.filter(c => ACCESS.indexOf(c[0]) >= 0).map(c => `<button class="mag" data-c="${c[0]}" data-name="${c[0]}" title="${c[0]}">${c[1]}</button>`).join('');
+  side.querySelectorAll('button').forEach(b => {
+    const c = COMPANIES.find(x => x[0] === b.dataset.c);
+    if (c && c[2]) getLogo(c).then(src => { if (!src) return; const im = new Image(); im.alt = c[1]; im.src = src; b.textContent = ''; b.classList.add('lg'); b.appendChild(im); });
+  });
   $('#app').classList.toggle('solo', ACCESS.length < 2);
   side.hidden = ACCESS.length < 2;
   setCompanyUI();
@@ -172,10 +206,14 @@ async function enter() {
   } catch (e) { return false; }
 }
 function setLogo(c, el) {
-  el.classList.remove('ini'); el.textContent = '';
+  el.classList.remove('ini'); el.textContent = ''; el.dataset.c = c[0];
   const ini = () => { el.classList.add('ini'); el.textContent = c[1]; };
   if (!c[2]) return ini();
-  const im = new Image(); im.alt = c[0] + ' logo'; im.onerror = ini; im.src = c[2]; el.appendChild(im);
+  getLogo(c).then(src => {
+    if (el.dataset.c !== c[0]) return;
+    if (!src) return ini();
+    const im = new Image(); im.alt = c[0] + ' logo'; im.src = src; el.appendChild(im);
+  });
 }
 function setCompanyUI() {
   $$('#side button').forEach(b => b.classList.toggle('on', b.dataset.c === company));
