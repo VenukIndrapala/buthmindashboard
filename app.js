@@ -207,7 +207,9 @@ async function enter() {
 }
 function setLogo(c, el) {
   el.classList.remove('ini'); el.textContent = ''; el.dataset.c = c[0];
-  const ini = () => { el.classList.add('ini'); el.textContent = c[1]; };
+  const ttl = el.parentNode;
+  ttl.classList.toggle('has-logo', !!c[2]);
+  const ini = () => { ttl.classList.remove('has-logo'); el.classList.add('ini'); el.textContent = c[1]; };
   if (!c[2]) return ini();
   getLogo(c).then(src => {
     if (el.dataset.c !== c[0]) return;
@@ -219,7 +221,7 @@ function setCompanyUI() {
   $$('#side button').forEach(b => b.classList.toggle('on', b.dataset.c === company));
   const co = COMPANIES.find(c => c[0] === company);
   if (co) $$('.clogo').forEach(el => setLogo(co, el));
-  $('#dash h1').textContent = company;
+  $('#dash .cname').textContent = company;
   $('#dash .head p').textContent = 'Supply Chain Overview · FY 2025/26';
   $('#entry .head p').textContent = 'Entering data for ' + company + '. Saved values appear on its dashboard instantly.';
 }
@@ -232,5 +234,5 @@ side.addEventListener('click', e => {
   $('#upd').textContent = 'Loading…';
   load();
 });
-if (!matchMedia('(hover:none)').matches) dock(side, '#side button', { max: 1.2, radius: 70, axis: 'y' });
+if (!matchMedia('(hover:none)').matches) dock(side, '#side button', { max: 1.1, radius: 60, axis: 'y' });
 setCompanyUI();
