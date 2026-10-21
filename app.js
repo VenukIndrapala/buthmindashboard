@@ -1,4 +1,4 @@
-const API = 'https://script.google.com/macros/s/AKfycbxS2vdHDmFbAo9rGI0tggipRpx6ngtcyY0R1P_yDchzlBg2OQz6TImaW3RfYDx4c8ihmQ/exec'; // Apps Script web app URL
+const API = 'https://script.google.com/macros/s/AKfycbx5qjUu2iMBPwE-5SbSWUe4pcg8_MX9K62MJ3hrfaJWt7d2ywsdbYtH3zpeuQwpJe2B-Q/exec'; // Apps Script web app URL
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const FN = ['Procurement', 'Planning', 'Warehousing', 'Logistics', 'Transportation'];
 // Folders searched for logo files, relative to index.html ('' = same folder as index.html). Add your folder here if needed.
@@ -47,7 +47,9 @@ const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'
 const mLabel = (m, long) => { const [y, mo] = m.split('-'); return long ? MN[+mo - 1] + ' ' + y : MN[+mo - 1] + ' \u2019' + y.slice(2); };
 const num = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
 const STAFF_K = FN.map(f => 'staff_' + f.toLowerCase());
-const SNAP_K = ['warehouses', 'fleet', ...STAFF_K]; // counts: show the latest month in the filter, never a sum
+const SNAP_K = ['fleet', ...STAFF_K];               // counts: show the latest month in the filter, never a sum
+const SPEND_K = ['spend_import', 'spend_local', 'spend_material', 'spend_services']; // total spend = sum of these four
+const WH_K = ['warehouses_local', 'warehouses_overseas'];                              // warehouses = local + overseas
 let flt = { all: true, sel: new Set() };             // month filter; resets when the company changes
 const resetFilter = () => { flt = { all: true, sel: new Set() }; $$('#entry input[name]').forEach(i => { delete i.dataset.d; i.value = ''; }); };
 
@@ -88,9 +90,20 @@ function picked() {
 }
 // spend = SUM over the selected months; counts (warehouses, fleet, staff) = value from the latest selected month that has one
 function summary(p) {
-  const S = { spend: 0, v: {}, asof: {} };
-  p.forEach(m => { const s = num(m.spend); if (s !== null) S.spend += s; });
+  const S = { spend: 0, cat: {}, un: 0, v: {}, asof: {}, wh: { l: 0, o: 0, t: 0, asof: null } };
+  SPEND_K.forEach(k => S.cat[k] = 0);
+  p.forEach(m => {
+    const c = SPEND_K.map(k => num(m[k]));
+    if (c.some(x => x !== null)) { SPEND_K.forEach((k, i) => { S.cat[k] += c[i] || 0; S.spend += c[i] || 0; }); }
+    else { const s = num(m.spend); if (s !== null) { S.spend += s; S.un += s; } } // older months entered before the split: counted in the total only
+  });
   SNAP_K.forEach(k => { for (let i = p.length - 1; i >= 0; i--) { const v = num(p[i][k]); if (v !== null) { S.v[k] = v; S.asof[k] = p[i].month; break; } } });
+  for (let i = p.length - 1; i >= 0; i--) {         // warehouses: latest month that has a value
+    const l = num(p[i].warehouses_local), o = num(p[i].warehouses_overseas);
+    if (l !== null || o !== null) { S.wh = { l: l || 0, o: o || 0, t: (l || 0) + (o || 0), asof: p[i].month }; break; }
+    const w = num(p[i].warehouses);
+    if (w !== null) { S.wh = { l: null, o: null, t: w, asof: p[i].month }; break; }
+  }
   return S;
 }
 const asOf = m => m ? 'As of ' + mLabel(m, 1) : 'No data yet';
@@ -102,11 +115,14 @@ function periodText(p) {
 }
 
 function renderKpis() {
-  const p = picked(), S = summary(p), n = k => S.v[k] || 0;
-  count($('#v-spend'), S.spend, v => 'LKR ' + v.toLocaleString());
-  count($('#v-wh'), n('warehouses')); count($('#v-fleet'), n('fleet'));
-  $('#v-wh-m').textContent = asOf(S.asof.warehouses); $('#v-fleet-m').textContent = asOf(S.asof.fleet);
-  $('#v-period').textContent = periodText(p);
+  const p = picked(), S = summary(p), n = k => S.v[k] || 0, lkr = v => 'LKR ' + v.toLocaleString();
+  count($('#v-spend'), S.spend, lkr);
+  SPEND_K.forEach(k => { count($('#v-' + k), S.cat[k], lkr); $('#p-' + k).textContent = (S.spend ? Math.round(S.cat[k] / S.spend * 100) : 0) + '% of total'; });
+  const W = S.wh;
+  count($('#v-wh'), W.t); count($('#v-fleet'), n('fleet'));
+  [['l', '#v-wh-l'], ['o', '#v-wh-o']].forEach(([x, id]) => { const el = $(id); if (W[x] === null) { el.textContent = '\u2013'; el.dataset.v = 0; } else count(el, W[x]); });
+  $('#v-wh-m').textContent = asOf(W.asof); $('#v-fleet-m').textContent = asOf(S.asof.fleet);
+  $('#v-period').textContent = periodText(p) + (S.un ? ' \u00b7 incl. LKR ' + S.un.toLocaleString() + ' entered before the category split' : '');
   const st = STAFF_K.map(k => n(k)), sa = STAFF_K.map(k => S.asof[k]).filter(Boolean).sort().pop();
   $('#v-staff').textContent = '· ' + st.reduce((x, y) => x + y, 0) + ' total' + (sa ? ' · ' + mLabel(sa, 1) : '');
   const sl = D.locations.filter(l => l.type === 'Sri Lanka').length;
@@ -140,10 +156,15 @@ function fillEntry(force) {
     if (!force && (document.activeElement === i || i.dataset.d)) return; // don't overwrite what the user is typing
     i.value = row && num(row[i.name]) !== null ? row[i.name] : ''; delete i.dataset.d;
   });
+  updTot();
   $('#mo-note').textContent = row ? 'This month already has data. Saving replaces the values you edit.' : 'No data saved for this month yet.';
 }
 $('#mo-m').onchange = $('#mo-y').onchange = () => fillEntry(true);
-$('#entry').addEventListener('input', e => { if (e.target.name) e.target.dataset.d = 1; });
+function updTot() {                                  // live totals under the spend / warehouse forms
+  const sum = ks => ks.reduce((t, k) => t + (num($('#entry input[name="' + k + '"]').value) || 0), 0);
+  $('#e-spend').textContent = 'LKR ' + sum(SPEND_K).toLocaleString(); $('#e-wh').textContent = sum(WH_K).toLocaleString();
+}
+$('#entry').addEventListener('input', e => { if (e.target.name) { e.target.dataset.d = 1; updTot(); } });
 
 function render() {
   const sl = D.locations.filter(l => l.type === 'Sri Lanka').length, os = D.locations.length - sl;
