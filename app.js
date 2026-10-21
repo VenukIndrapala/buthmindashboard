@@ -1,4 +1,4 @@
-const API = 'https://script.google.com/macros/s/AKfycbxS2vdHDmFbAo9rGI0tggipRpx6ngtcyY0R1P_yDchzlBg2OQz6TImaW3RfYDx4c8ihmQ/exec'; // Apps Script web app URL
+const API = 'https://script.google.com/macros/s/AKfycbx5qjUu2iMBPwE-5SbSWUe4pcg8_MX9K62MJ3hrfaJWt7d2ywsdbYtH3zpeuQwpJe2B-Q/exec'; // Apps Script web app URL
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const FN = ['Procurement', 'Planning', 'Warehousing', 'Logistics', 'Transportation'];
 // Folders searched for logo files, relative to index.html ('' = same folder as index.html). Add your folder here if needed.
@@ -69,7 +69,9 @@ async function load(first) {
     const d = await call();
     if (c0 !== company) return false;
     if (d.error) return false;
-    d.months = d.months || []; D = d; locs = d.locations.map(l => ({ ...l })); render(); return true;
+    d.months = d.months || []; D = d; locs = d.locations.map(l => ({ ...l }));
+    if (!(sysCo === c0 && sysBusy())) { SYS = normSys(d.systems); sysCo = c0; } // don't overwrite what is being typed / saved
+    render(); return true;
   } catch (e) { if (!first) console.warn(e); return false; }
 }
 
@@ -147,6 +149,8 @@ function render() {
   drawFilter(); renderKpis(); drawMap();
   fillEntry(false);
   drawLocs();
+  if (!sysBusy()) renderSysTable();
+  updateSys();
   $('#hist').innerHTML = D.history.slice(0, 12).map(h =>
     `<tr><td>${new Date(h.time).toLocaleString()}</td><td>${h.metric}</td><td>${h.by || ''}</td><td>${h.value}</td></tr>`).join('');
 }
@@ -314,8 +318,10 @@ function setCompanyUI() {
 side.addEventListener('click', e => {
   const b = e.target.closest('button');
   if (!b || b.dataset.c === company) return;
+  flushSys();                                   // save pending systems edits to the company we are leaving
   company = b.dataset.c;
   sessionStorage.setItem('c', company);
+  SYS = normSys(null); sysCo = company; renderSysTable(); updateSys();
   resetFilter();
   setCompanyUI();
   replay();
@@ -349,3 +355,146 @@ function showBg() {
   let ys = ''; for (let k = 2020; k <= y + 1; k++) ys += `<option>${k}</option>`;
   $('#mo-y').innerHTML = ys; $('#mo-y').value = y; $('#mo-m').value = String(now.getMonth() + 1).padStart(2, '0');
 })();
+
+/* ================= Systems used across business functions =================
+   Stored in Apps Script's script properties (not in the sheet, not in the history log).
+   Typing updates every card/chart instantly and saves ~1s after the last keystroke. */
+const DV = ['SAP', 'Oracle', 'Microsoft', 'Other'];           // fixed vendors ('Other' always stays last)
+const SYS_PAL = [RED, '#3a3d42', '#9a9da1', '#8c1b2b', '#e98a96', '#5f6368', '#b9a3a7', '#2f6f8f'];
+const SYS_LIGHT = ['#d4d5d8', '#e98a96', '#b9a3a7', '#9a9da1'];  // segments that need dark text
+const vcol = (v, i) => v === 'Other' ? '#d4d5d8' : SYS_PAL[i % SYS_PAL.length];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const sameName = (a, b) => a.toLowerCase() === b.toLowerCase();
+let SYS = null, sysCo = company, sysTimer = 0, sysFly = {}, sysChain = Promise.resolve();
+
+function normSys(s) {
+  s = s || {};
+  const uniq = a => { const o = []; (Array.isArray(a) ? a : []).forEach(x => { x = String(x).trim(); if (x && !o.some(y => sameName(x, y))) o.push(x); }); return o; };
+  const V = [...DV.slice(0, -1), ...uniq(s.vendors).filter(v => !DV.some(d => sameName(d, v))), 'Other'];
+  const F = [...FN, ...uniq(s.funcs).filter(f => !FN.some(d => sameName(d, f)))];
+  const n = x => { x = Math.floor(+x); return x > 0 ? x : 0; };
+  const grid = {}, un = {};
+  F.forEach(f => { grid[f] = {}; V.forEach(v => grid[f][v] = n(s.grid && s.grid[f] && s.grid[f][v])); });
+  V.forEach(v => { const u = s.uniq && s.uniq[v]; un[v] = (u === '' || u == null) ? '' : n(u); });
+  return { vendors: V, funcs: F, grid, uniq: un };
+}
+SYS = normSys(null);
+const sysBusy = () => !!sysTimer || (sysFly[sysCo] || 0) > 0 || $('#systbl').contains(document.activeElement);
+const setSt = t => { $('#sysst').textContent = t ? '\u00b7 ' + t : ''; };
+
+// totals. "Unique systems" cells left blank fall back to that vendor's column total.
+function sysCalc() {
+  const V = SYS.vendors, F = SYS.funcs, sum = a => a.reduce((x, y) => x + y, 0);
+  const rt = F.map(f => sum(V.map(v => SYS.grid[f][v])));
+  const ct = V.map(v => sum(F.map(f => SYS.grid[f][v])));
+  const un = V.map((v, i) => SYS.uniq[v] === '' ? ct[i] : SYS.uniq[v]);
+  return { rt, ct, un, grand: sum(ct), uTot: sum(un), fn: rt.filter(x => x > 0).length, vn: V.filter((v, i) => ct[i] > 0 || un[i] > 0).length };
+}
+
+function renderSysTable() {
+  const V = SYS.vendors, F = SYS.funcs, cV = v => !DV.includes(v), cF = f => !FN.includes(f);
+  const x = (a, i) => `<button type="button" class="x" ${a}="${i}" title="Remove">\u00d7</button>`;
+  $('#systbl').innerHTML = `<thead><tr><th>Business function</th>${V.map((v, i) => `<th>${esc(v)}${cV(v) ? x('data-rv', i) : ''}</th>`).join('')}<th>Total</th></tr></thead><tbody>`
+    + F.map((f, r) => `<tr><td>${esc(f)}${cF(f) ? x('data-rf', r) : ''}</td>${V.map((v, c) => `<td><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-r="${r}" data-c="${c}" value="${SYS.grid[f][v] || ''}"></td>`).join('')}<td data-rt="${r}">0</td></tr>`).join('')
+    + `<tr class="tot"><td>Total</td>${V.map((v, c) => `<td data-ct="${c}">0</td>`).join('')}<td id="gt">0</td></tr>`
+    + `<tr class="uq"><td title="Distinct systems per vendor. Leave blank to use the column total.">Unique systems</td>${V.map((v, i) => `<td><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-u="${i}" value="${SYS.uniq[v] === '' ? '' : SYS.uniq[v]}"></td>`).join('')}<td id="ut">0</td></tr></tbody>`;
+}
+
+const sysPlug = {
+  id: 'sysBar',
+  afterDatasetsDraw(ch) {
+    const g = ch.ctx, ds = ch.data.datasets; g.save(); g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '600 12px Inter,system-ui,sans-serif';
+    ch.data.labels.forEach((_, i) => {
+      let tot = 0, top = null;
+      ds.forEach((d, k) => { const v = d.data[i]; if (!v) return; tot += v; const el = ch.getDatasetMeta(k).data[i];
+        if (el && Math.abs(el.base - el.y) >= 15) { g.fillStyle = SYS_LIGHT.includes(d.backgroundColor) ? NOIR : '#fff'; g.fillText(v, el.x, (el.y + el.base) / 2); }
+        if (el) top = top === null ? el.y : Math.min(top, el.y); });
+      if (tot) { g.fillStyle = NOIR; g.font = '700 13px Inter,system-ui,sans-serif'; g.fillText(tot, ch.getDatasetMeta(0).data[i].x, top - 12); g.font = '600 12px Inter,system-ui,sans-serif'; }
+    });
+    g.restore();
+  }
+};
+const donutPlug = {
+  id: 'sysDon',
+  afterDatasetsDraw(ch) {
+    const o = ch.options.plugins.sysDon || {}, a = ch.chartArea, g = ch.ctx, cx = (a.left + a.right) / 2, cy = (a.top + a.bottom) / 2;
+    g.save(); g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = NOIR; g.font = '700 28px Inter,system-ui,sans-serif'; g.fillText(o.total || 0, cx, cy - 8);
+    g.fillStyle = GREY; g.font = '400 13px Inter,system-ui,sans-serif'; g.fillText('Total Systems', cx, cy + 16);
+    if (o.total) { g.font = '600 12px Inter,system-ui,sans-serif';
+      ch.getDatasetMeta(0).data.forEach((el, i) => { const v = ch.data.datasets[0].data[i], p = v / o.total * 100; if (p < 5) return;
+        const t = el.tooltipPosition(); g.fillStyle = SYS_LIGHT.includes(ch.data.datasets[0].backgroundColor[i]) ? NOIR : '#fff'; g.fillText(Math.round(p) + '%', t.x, t.y); }); }
+    g.restore();
+  }
+};
+function sysChart(id, cfg) {
+  if (charts[id]) { charts[id].data = cfg.data; charts[id].options = cfg.options; charts[id].update(); }
+  else charts[id] = new Chart($('#' + id), cfg);
+}
+function updateSys() {
+  const C = sysCalc(), V = SYS.vendors, F = SYS.funcs, col = V.map(vcol);
+  $$('#systbl [data-rt]').forEach(td => td.textContent = C.rt[+td.dataset.rt]);
+  $$('#systbl [data-ct]').forEach(td => td.textContent = C.ct[+td.dataset.ct]);
+  if ($('#gt')) { $('#gt').textContent = C.grand; $('#ut').textContent = C.uTot; }
+  $$('#systbl input[data-u]').forEach(i => i.placeholder = C.ct[+i.dataset.u]);
+  count($('#s-tot'), C.uTot); count($('#s-dep'), C.grand); count($('#s-fn'), C.fn); count($('#s-vn'), C.vn);
+  $('#s-leg').innerHTML = V.map((v, i) => `<li><i style="background:${col[i]}"></i><span>${esc(v)}</span><b>${C.un[i]}</b></li>`).join('');
+  if (typeof Chart === 'undefined') return;
+  Chart.defaults.color = GREY;
+  sysChart('c-sys-bar', { type: 'bar', plugins: [sysPlug],
+    data: { labels: F, datasets: V.map((v, i) => ({ label: v, data: F.map(f => SYS.grid[f][v]), backgroundColor: col[i], borderWidth: 0 })) },
+    options: { maintainAspectRatio: false, layout: { padding: { top: 18 } },
+      plugins: { legend: { position: 'top', align: 'start', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } } },
+      scales: { x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, font: { size: 11 } } }, y: { stacked: true, beginAtZero: true, grace: '8%', grid: { color: GRID }, ticks: { precision: 0 }, title: { display: true, text: 'Number of systems' } } } } });
+  const empty = C.uTot === 0;
+  sysChart('c-sys-don', { type: 'doughnut', plugins: [donutPlug],
+    data: { labels: empty ? ['No data'] : V, datasets: [{ data: empty ? [1] : C.un, backgroundColor: empty ? ['#ececee'] : col, borderWidth: 0 }] },
+    options: { maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false }, tooltip: { enabled: !empty }, sysDon: { total: C.uTot } } } });
+}
+
+/* ---- editing + saving ---- */
+function schedSave() { setSt('Saving\u2026'); clearTimeout(sysTimer); sysTimer = setTimeout(flushSys, 900); }
+function flushSys() {
+  if (!sysTimer) return; clearTimeout(sysTimer); sysTimer = 0;
+  const co = sysCo, data = JSON.parse(JSON.stringify(SYS));
+  sysFly[co] = (sysFly[co] || 0) + 1;
+  sysChain = sysChain.then(async () => {                      // saves go out one at a time, in order
+    try { const r = await call({ action: 'systems', company: co, systems: data }); if (r.error) throw new Error(r.error); if (!sysTimer) setSt('Saved'); }
+    catch { toast('Systems not saved. Check your connection.'); setSt('Not saved'); }
+    finally { sysFly[co]--; }
+  });
+}
+addEventListener('pagehide', () => { if (sysTimer) { clearTimeout(sysTimer); sysTimer = 0;
+  try { fetch(API, { method: 'POST', keepalive: true, body: JSON.stringify({ key, company: sysCo, action: 'systems', systems: SYS }) }); } catch (e) {} } });
+$('#systbl').addEventListener('input', e => {
+  const t = e.target; if (t.tagName !== 'INPUT') return;
+  const v = t.value === '' ? '' : Math.max(0, Math.floor(+t.value) || 0);
+  if (t.dataset.u != null) SYS.uniq[SYS.vendors[+t.dataset.u]] = v;
+  else SYS.grid[SYS.funcs[+t.dataset.r]][SYS.vendors[+t.dataset.c]] = v === '' ? 0 : v;
+  updateSys(); schedSave();
+});
+$('#systbl').addEventListener('change', e => {          // tidy what is shown once the cell is left
+  const t = e.target; if (t.tagName !== 'INPUT') return;
+  const s = t.dataset.u != null ? SYS.uniq[SYS.vendors[+t.dataset.u]] : SYS.grid[SYS.funcs[+t.dataset.r]][SYS.vendors[+t.dataset.c]];
+  t.value = s === '' || s === 0 ? '' : s;
+});
+$('#systbl').addEventListener('click', e => {
+  const b = e.target.closest('.x'); if (!b) return;
+  const isV = b.dataset.rv != null, name = isV ? SYS.vendors[+b.dataset.rv] : SYS.funcs[+b.dataset.rf];
+  if (!confirm('Remove "' + name + '"? Its numbers will be deleted.')) return;
+  if (isV) { SYS.vendors = SYS.vendors.filter(v => v !== name); SYS.funcs.forEach(f => delete SYS.grid[f][name]); delete SYS.uniq[name]; }
+  else { SYS.funcs = SYS.funcs.filter(f => f !== name); delete SYS.grid[name]; }
+  renderSysTable(); updateSys(); schedSave();
+});
+function addSys(kind) {
+  const inp = $(kind === 'vendors' ? '#nv' : '#nf'), name = inp.value.trim(), list = SYS[kind];
+  if (!name) return;
+  if (list.some(x => sameName(x, name))) return toast('"' + name + '" is already in the table');
+  if (list.length >= (kind === 'vendors' ? 10 : 12)) return toast('Limit reached. Remove one first.');
+  if (kind === 'vendors') { list.splice(list.length - 1, 0, name); SYS.funcs.forEach(f => SYS.grid[f][name] = 0); SYS.uniq[name] = ''; }  // keeps "Other" last
+  else { list.push(name); SYS.grid[name] = {}; SYS.vendors.forEach(v => SYS.grid[name][v] = 0); }
+  inp.value = ''; renderSysTable(); updateSys(); schedSave();
+}
+$('#addv').onclick = () => addSys('vendors'); $('#addf').onclick = () => addSys('funcs');
+$('#nv').onkeydown = e => { if (e.key === 'Enter') addSys('vendors'); }; $('#nf').onkeydown = e => { if (e.key === 'Enter') addSys('funcs'); };
+renderSysTable();
