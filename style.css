@@ -150,3 +150,12 @@ body{overflow-x:hidden}
 .addrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.addrow input{width:210px;margin:0}
 @media(max-width:560px){.kpi{flex-direction:column;align-items:flex-start;gap:10px}.dwrap{flex-direction:column;height:auto}.dcv{height:240px;width:100%;flex:none}.sleg{width:100%}.addrow input{width:100%}}
 @media(max-width:860px){.sect{grid-column:span 2}}
+
+/* ---- Procurement spend categories (inside the hero card) + Enter Data totals ---- */
+.hero .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px;position:relative;z-index:1}
+.hero .cat{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:16px;padding:14px 16px;min-width:0}
+.hero .cat small{display:block;font-size:14px;font-weight:600;color:rgba(255,255,255,.88)}
+.hero .cat b{display:block;margin-top:4px;font-size:22px;line-height:1.2;color:#fff;overflow-wrap:anywhere}
+.hero .cat i{display:block;margin-top:2px;font-style:normal;font-size:12px;color:rgba(255,255,255,.8)}
+.etot{margin:0 0 14px;color:var(--mu);font-size:14px}.etot b{color:var(--tx);font-size:15px}
+@media(max-width:860px){.hero .cats{grid-template-columns:1fr 1fr}.hero .cat b{font-size:19px}}
