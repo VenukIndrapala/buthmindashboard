@@ -10,8 +10,14 @@
 <main id="dash" class="page show">
 <div class="head reveal"><div><h1 class="ttl"><span class="clogo"></span><span class="cname">Supply Chain Overview</span></h1><p>FY 2025/26 snapshot</p></div><span class="live"><i></i>Live · <em id="upd">--</em></span></div>
 <section class="grid">
-<div class="card hero reveal"><span>Total procurement spend · FY 2025/26</span><h2 id="v-spend">LKR 0</h2><p class="hs" id="v-period"></p></div>
-<div class="card reveal"><span>Warehouses (WHs)</span><h2 id="v-wh">0</h2><p class="sub" id="v-wh-m"></p></div>
+<div class="card hero reveal"><span>Total procurement spend · FY 2025/26</span><h2 id="v-spend">LKR 0</h2><p class="hs" id="v-period"></p>
+<div class="cats">
+<div class="cat"><small>Import</small><b id="v-spend_import">LKR 0</b><i id="p-spend_import">0% of total</i></div>
+<div class="cat"><small>Local</small><b id="v-spend_local">LKR 0</b><i id="p-spend_local">0% of total</i></div>
+<div class="cat"><small>Material</small><b id="v-spend_material">LKR 0</b><i id="p-spend_material">0% of total</i></div>
+<div class="cat"><small>Services</small><b id="v-spend_services">LKR 0</b><i id="p-spend_services">0% of total</i></div>
+</div></div>
+<div class="card reveal"><span>Warehouses (WHs)</span><h2 id="v-wh">0</h2><p class="sub"><b id="v-wh-l">0</b> Local · <b id="v-wh-o">0</b> Overseas</p><p class="sub" id="v-wh-m"></p></div>
 <div class="card reveal"><span>Transport fleet vehicles</span><h2 id="v-fleet">0</h2><p class="sub" id="v-fleet-m"></p></div>
 <div class="card reveal"><span>Production locations</span><h2 id="v-loc">0</h2><p class="sub"><b id="v-sl">0</b> Sri Lanka · <b id="v-os">0</b> Overseas</p></div>
 <div class="card fcard reveal"><div class="fh"><h3>Filter by month</h3><button type="button" class="fall on" id="fall">All months</button></div><div class="chips" id="fchips"></div><p class="sub" id="fsum">No data yet.</p></div>
@@ -30,8 +36,8 @@
 <main id="entry" class="page"><div class="head reveal"><div><h1 class="ttl"><span class="clogo"></span><span>Enter Data</span></h1><p>Saved values appear on the dashboard instantly.</p></div></div>
 <div class="card monthbar reveal"><h3>Data month</h3><select id="mo-m" aria-label="Month"></select><select id="mo-y" aria-label="Year"></select><p class="sub" id="mo-note"></p></div>
 <section class="grid forms">
-<form class="card reveal" data-f="spend"><h3>Procurement spend (LKR)</h3><label>Spend for the selected month<input name="spend" type="number" min="0" step="any" required></label><button class="btn">Save</button></form>
-<form class="card reveal" data-f="wh"><h3>Warehouses</h3><label>Number of WHs<input name="warehouses" type="number" min="0" required></label><button class="btn">Save</button></form>
+<form class="card reveal" data-f="spend"><h3>Procurement spend (LKR)</h3><label>Import<input name="spend_import" type="number" min="0" step="any" required></label><label>Local<input name="spend_local" type="number" min="0" step="any" required></label><label>Material<input name="spend_material" type="number" min="0" step="any" required></label><label>Services<input name="spend_services" type="number" min="0" step="any" required></label><p class="etot">Total spend: <b id="e-spend">LKR 0</b></p><button class="btn">Save</button></form>
+<form class="card reveal" data-f="wh"><h3>Warehouses</h3><label>Local<input name="warehouses_local" type="number" min="0" required></label><label>Overseas<input name="warehouses_overseas" type="number" min="0" required></label><p class="etot">Total WHs: <b id="e-wh">0</b></p><button class="btn">Save</button></form>
 <form class="card reveal" data-f="fl"><h3>Fleet vehicles</h3><label>Total vehicles<input name="fleet" type="number" min="0" required></label><button class="btn">Save</button></form>
 <form class="card reveal" data-f="st"><h3>Staff per function</h3>
 <label>Procurement<input name="staff_procurement" type="number" min="0" required></label><label>Planning<input name="staff_planning" type="number" min="0" required></label><label>Warehousing<input name="staff_warehousing" type="number" min="0" required></label><label>Logistics<input name="staff_logistics" type="number" min="0" required></label><label>Transportation<input name="staff_transportation" type="number" min="0" required></label><button class="btn">Save</button></form>
