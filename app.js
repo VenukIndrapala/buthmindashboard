@@ -1,4 +1,5 @@
-const API = 'https://script.google.com/macros/s/AKfycbx5qjUu2iMBPwE-5SbSWUe4pcg8_MX9K62MJ3hrfaJWt7d2ywsdbYtH3zpeuQwpJe2B-Q/exec'; // Apps Script web app URL
+const API = 'https://script.google.com/macros/s/AKfycbwB2PFQs8DHTuVZF8fCZOzGI3SjNVgnXRJ-Ktt_Fd8r57AEpK-jNtisCAhOpAl2AKDJwQ/exec
+'; // Apps Script web app URL
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const FN = ['Procurement', 'Planning', 'Warehousing', 'Logistics', 'Transportation'];
 // Folders searched for logo files, relative to index.html ('' = same folder as index.html). Add your folder here if needed.
@@ -42,6 +43,15 @@ let company = sessionStorage.getItem('c') || COMPANIES[0][0];
 let ACCESS = [];
 let key = sessionStorage.getItem('k') || '', D = null, locs = [], charts = {}, map, layer, timer;
 
+/* ---- Month helpers + filter state ---- */
+const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const mLabel = (m, long) => { const [y, mo] = m.split('-'); return long ? MN[+mo - 1] + ' ' + y : MN[+mo - 1] + ' \u2019' + y.slice(2); };
+const num = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
+const STAFF_K = FN.map(f => 'staff_' + f.toLowerCase());
+const SNAP_K = ['warehouses', 'fleet', ...STAFF_K]; // counts: show the latest month in the filter, never a sum
+let flt = { all: true, sel: new Set() };             // month filter; resets when the company changes
+const resetFilter = () => { flt = { all: true, sel: new Set() }; $$('#entry input[name]').forEach(i => { delete i.dataset.d; i.value = ''; }); };
+
 const call = async body => {
   const r = body ? await fetch(API, { method: 'POST', body: JSON.stringify({ key, company, ...body }) })
                  : await fetch(API + '?key=' + encodeURIComponent(key) + '&company=' + encodeURIComponent(company));
@@ -60,21 +70,83 @@ async function load(first) {
     const d = await call();
     if (c0 !== company) return false;
     if (d.error) return false;
-    D = d; locs = d.locations.map(l => ({ ...l })); render(); return true;
+    d.months = d.months || []; D = d; locs = d.locations.map(l => ({ ...l })); render(); return true;
   } catch (e) { if (!first) console.warn(e); return false; }
 }
 
-function render() {
-  const c = D.current, n = k => +c[k] || 0;
-  count($('#v-spend'), n('spend'), v => 'LKR ' + v.toLocaleString());
+const allMonths = () => ((D && D.months) || []).filter(m => m.month).sort((x, y) => x.month < y.month ? -1 : 1);
+function picked() {
+  const all = allMonths();
+  if (flt.all) return all;
+  const p = all.filter(m => flt.sel.has(m.month));
+  if (p.length) return p;
+  flt = { all: true, sel: new Set() }; return all;
+}
+// spend = SUM over the selected months; counts (warehouses, fleet, staff) = value from the latest selected month that has one
+function summary(p) {
+  const S = { spend: 0, v: {}, asof: {} };
+  p.forEach(m => { const s = num(m.spend); if (s !== null) S.spend += s; });
+  SNAP_K.forEach(k => { for (let i = p.length - 1; i >= 0; i--) { const v = num(p[i][k]); if (v !== null) { S.v[k] = v; S.asof[k] = p[i].month; break; } } });
+  return S;
+}
+const asOf = m => m ? 'As of ' + mLabel(m, 1) : 'No data yet';
+function periodText(p) {
+  if (!p.length) return 'No data entered yet';
+  if (p.length === 1) return mLabel(p[0].month, 1);
+  if (flt.all) return 'All ' + p.length + ' months · ' + mLabel(p[0].month) + ' – ' + mLabel(p[p.length - 1].month);
+  return p.length <= 3 ? p.map(m => mLabel(m.month)).join(', ') + ' · ' + p.length + ' months' : p.length + ' months selected';
+}
+
+function renderKpis() {
+  const p = picked(), S = summary(p), n = k => S.v[k] || 0;
+  count($('#v-spend'), S.spend, v => 'LKR ' + v.toLocaleString());
   count($('#v-wh'), n('warehouses')); count($('#v-fleet'), n('fleet'));
+  $('#v-wh-m').textContent = asOf(S.asof.warehouses); $('#v-fleet-m').textContent = asOf(S.asof.fleet);
+  $('#v-period').textContent = periodText(p);
+  const st = STAFF_K.map(k => n(k)), sa = STAFF_K.map(k => S.asof[k]).filter(Boolean).sort().pop();
+  $('#v-staff').textContent = '· ' + st.reduce((x, y) => x + y, 0) + ' total' + (sa ? ' · ' + mLabel(sa, 1) : '');
+  const sl = D.locations.filter(l => l.type === 'Sri Lanka').length;
+  drawCharts(st, sl, D.locations.length - sl);
+}
+
+function drawFilter() {
+  const all = allMonths(), p = picked(), on = new Set(p.map(m => m.month));
+  $('#fchips').innerHTML = all.map(m => `<button type="button" class="chip${on.has(m.month) ? ' on' : ''}" data-m="${m.month}" title="${mLabel(m.month, 1)}">${mLabel(m.month)}</button>`).join('');
+  $('#fall').classList.toggle('on', flt.all && all.length > 0); $('#fall').disabled = !all.length;
+  $('#fsum').textContent = !all.length ? 'No data yet. Add a month in Enter Data.'
+    : flt.all ? 'Showing all ' + all.length + (all.length === 1 ? ' month' : ' months') : p.length + ' of ' + all.length + ' months selected';
+}
+$('#fchips').onclick = e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const m = b.dataset.m, all = allMonths().map(x => x.month);
+  if (flt.all) flt = { all: false, sel: new Set([m]) };           // first click from "all" = just that month
+  else {
+    flt.sel.has(m) ? flt.sel.delete(m) : flt.sel.add(m);          // then click more months to add / remove them
+    if (!all.some(x => flt.sel.has(x)) || all.every(x => flt.sel.has(x))) flt = { all: true, sel: new Set() };
+  }
+  drawFilter(); renderKpis();
+};
+$('#fall').onclick = () => { flt = { all: true, sel: new Set() }; drawFilter(); renderKpis(); };
+
+/* ---- Enter Data: month picker + prefill of the chosen month ---- */
+const entryMonth = () => $('#mo-y').value + '-' + $('#mo-m').value;
+function fillEntry(force) {
+  const row = ((D && D.months) || []).find(m => m.month === entryMonth());
+  $$('#entry input[name]').forEach(i => {
+    if (!force && (document.activeElement === i || i.dataset.d)) return; // don't overwrite what the user is typing
+    i.value = row && num(row[i.name]) !== null ? row[i.name] : ''; delete i.dataset.d;
+  });
+  $('#mo-note').textContent = row ? 'This month already has data. Saving replaces the values you edit.' : 'No data saved for this month yet.';
+}
+$('#mo-m').onchange = $('#mo-y').onchange = () => fillEntry(true);
+$('#entry').addEventListener('input', e => { if (e.target.name) e.target.dataset.d = 1; });
+
+function render() {
   const sl = D.locations.filter(l => l.type === 'Sri Lanka').length, os = D.locations.length - sl;
   count($('#v-loc'), D.locations.length); $('#v-sl').textContent = sl; $('#v-os').textContent = os;
-  const st = FN.map(f => n('staff_' + f.toLowerCase()));
-  $('#v-staff').textContent = '· ' + st.reduce((a, b) => a + b, 0) + ' total';
   $('#upd').textContent = new Date().toLocaleTimeString();
-  drawCharts(st, sl, os); drawMap();
-  $$('#entry input[name]').forEach(i => { if (document.activeElement !== i) i.value = c[i.name] ?? ''; });
+  drawFilter(); renderKpis(); drawMap();
+  fillEntry(false);
   drawLocs();
   $('#hist').innerHTML = D.history.slice(0, 12).map(h =>
     `<tr><td>${new Date(h.time).toLocaleString()}</td><td>${h.metric}</td><td>${h.by || ''}</td><td>${h.value}</td></tr>`).join('');
@@ -119,7 +191,13 @@ $('#saveL').onclick = async () => { await call({ action: 'locations', locations:
 $$('form[data-f]').forEach(f => f.onsubmit = async e => {
   e.preventDefault(); const values = {};
   [...f.querySelectorAll('input')].forEach(i => values[i.name] = i.value);
-  try { await call({ action: 'save', values }); toast('Saved'); load(); } catch { toast('Save failed'); }
+  const month = entryMonth();
+  try {
+    const r = await call({ action: 'save', month, values });
+    if (r.error) throw new Error(r.error);
+    [...f.querySelectorAll('input')].forEach(i => delete i.dataset.d);
+    toast('Saved \u00b7 ' + mLabel(month, 1)); load();
+  } catch { toast('Save failed'); }
 });
 
 $('#lf').onsubmit = async e => {
@@ -232,13 +310,14 @@ function setCompanyUI() {
   if (co) $$('.clogo').forEach(el => setLogo(co, el));
   $('#dash .cname').textContent = company;
   $('#dash .head p').textContent = 'Supply Chain Overview · FY 2025/26';
-  $('#entry .head p').textContent = 'Entering data for ' + company + '. Saved values appear on its dashboard instantly.';
+  $('#entry .head p').textContent = 'Entering data for ' + company + '. Choose the month first; saving a month again replaces its earlier values.';
 }
 side.addEventListener('click', e => {
   const b = e.target.closest('button');
   if (!b || b.dataset.c === company) return;
   company = b.dataset.c;
   sessionStorage.setItem('c', company);
+  resetFilter();
   setCompanyUI();
   replay();
   $('#upd').textContent = 'Loading…';
@@ -263,3 +342,11 @@ function showBg() {
   bgv.hidden = false;
   if (!matchMedia('(prefers-reduced-motion:reduce)').matches) bgv.play().catch(() => {});
 }
+
+/* ---- Month picker setup (defaults to the current month) ---- */
+(function () {
+  const now = new Date(), y = now.getFullYear();
+  $('#mo-m').innerHTML = MN.map((m, i) => `<option value="${String(i + 1).padStart(2, '0')}">${m}</option>`).join('');
+  let ys = ''; for (let k = 2020; k <= y + 1; k++) ys += `<option>${k}</option>`;
+  $('#mo-y').innerHTML = ys; $('#mo-y').value = y; $('#mo-m').value = String(now.getMonth() + 1).padStart(2, '0');
+})();
