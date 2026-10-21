@@ -18,14 +18,14 @@
 <div class="card wide reveal"><h3>Staff by function <em id="v-staff"></em></h3><div class="ch"><canvas id="c-staff"></canvas></div></div>
 <div class="card reveal"><h3>Sri Lanka vs overseas</h3><div class="ch"><canvas id="c-loc"></canvas></div></div>
 <div class="card full reveal"><h3>Production locations map</h3><div id="map"></div></div>
-<h2 class="sect reveal">Systems used across business functions <em>Edit the table below and everything updates live</em></h2>
+<h2 class="sect reveal">Systems used across business functions <em>Maintained in Enter Data</em></h2>
 <div class="card kpi reveal"><div class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div><div><span>Total Systems (Unique)</span><h2 id="s-tot">0</h2></div></div>
 <div class="card kpi reveal"><div class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/><path d="m3 17.5 9 5 9-5"/></svg></div><div><span>Total Deployments</span><h2 id="s-dep">0</h2></div></div>
 <div class="card kpi reveal"><div class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.2 7.8 8 9 4.8-1.2 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div><div><span>Business Functions Supported</span><h2 id="s-fn">0</h2></div></div>
 <div class="card kpi reveal"><div class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.5"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 7l3 3M17 7l-3 3M7 17l3-3M17 17l-3-3"/></svg></div><div><span>Vendors Used</span><h2 id="s-vn">0</h2></div></div>
 <div class="card half reveal"><h3>Systems by business function</h3><div class="ch tall"><canvas id="c-sys-bar"></canvas></div></div>
 <div class="card half reveal"><h3>System distribution by vendor</h3><div class="dwrap"><div class="dcv"><canvas id="c-sys-don"></canvas></div><ul class="sleg" id="s-leg"></ul></div></div>
-<div class="card full reveal"><h3>Systems by business function (summary) <em id="sysst"></em></h3><div class="tw"><table class="stbl" id="systbl"></table></div><div class="addrow"><input id="nv" maxlength="24" placeholder="New system / vendor"><button type="button" class="btn ghost" id="addv">Add vendor</button><input id="nf" maxlength="24" placeholder="New business function"><button type="button" class="btn ghost" id="addf">Add function</button></div></div>
+<div class="card full reveal"><h3>Systems by business function (summary)</h3><div class="tw"><table class="stbl" id="systbl"></table></div></div>
 </section></main>
 <main id="entry" class="page"><div class="head reveal"><div><h1 class="ttl"><span class="clogo"></span><span>Enter Data</span></h1><p>Saved values appear on the dashboard instantly.</p></div></div>
 <div class="card monthbar reveal"><h3>Data month</h3><select id="mo-m" aria-label="Month"></select><select id="mo-y" aria-label="Year"></select><p class="sub" id="mo-note"></p></div>
@@ -39,6 +39,10 @@
 <div class="row"><input id="ln" placeholder="Location name / city"><select id="lt"><option>Sri Lanka</option><option>Overseas</option></select><input id="la" placeholder="Lat" type="number" step="any"><input id="lo" placeholder="Lng" type="number" step="any"></div>
 <div class="row"><button class="btn ghost" id="find" type="button">Find coordinates</button><button class="btn ghost" id="add" type="button">Add</button><button class="btn" id="saveL" type="button">Save locations</button></div>
 <ul id="ll"></ul></div>
+<div class="card full reveal"><h3>Systems by business function (summary) <em id="sysst"></em></h3>
+<p class="sub">Fill in the number of systems per vendor. Leave "Unique systems" blank to use the column total. The dashboard updates when you press Save.</p>
+<div class="tw"><table class="stbl" id="systbl-e"></table></div>
+<div class="addrow"><input id="nv" maxlength="24" placeholder="New system / vendor"><button type="button" class="btn ghost" id="addv">Add vendor</button><input id="nf" maxlength="24" placeholder="New business function"><button type="button" class="btn ghost" id="addf">Add function</button><button type="button" class="btn" id="sysSave">Save systems</button></div></div>
 <div class="card full reveal"><h3>Recent changes</h3><table><tbody id="hist"></tbody></table></div>
 </section></main></div><div id="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
