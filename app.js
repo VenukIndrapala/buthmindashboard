@@ -1,4 +1,4 @@
-const API = 'https://script.google.com/macros/s/AKfycbx5qjUu2iMBPwE-5SbSWUe4pcg8_MX9K62MJ3hrfaJWt7d2ywsdbYtH3zpeuQwpJe2B-Q/exec'; // Apps Script web app URL
+const API = 'https://script.google.com/macros/s/AKfycbxS2vdHDmFbAo9rGI0tggipRpx6ngtcyY0R1P_yDchzlBg2OQz6TImaW3RfYDx4c8ihmQ/exec'; // Apps Script web app URL
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const FN = ['Procurement', 'Planning', 'Warehousing', 'Logistics', 'Transportation'];
 // Folders searched for logo files, relative to index.html ('' = same folder as index.html). Add your folder here if needed.
@@ -70,7 +70,10 @@ async function load(first) {
     if (c0 !== company) return false;
     if (d.error) return false;
     d.months = d.months || []; D = d; locs = d.locations.map(l => ({ ...l }));
-    if (!(sysCo === c0 && sysBusy())) { SYS = normSys(d.systems); sysCo = c0; } // don't overwrite what is being typed / saved
+    if (!sysSaving) {                                   // keep the draft safe while saving
+      SYS = normSys(d.systems);
+      if (!drDirty && JSON.stringify(DR) !== JSON.stringify(SYS)) { DR = clone(SYS); renderSysEdit(); }
+    }
     render(); return true;
   } catch (e) { if (!first) console.warn(e); return false; }
 }
@@ -149,7 +152,6 @@ function render() {
   drawFilter(); renderKpis(); drawMap();
   fillEntry(false);
   drawLocs();
-  if (!sysBusy()) renderSysTable();
   updateSys();
   $('#hist').innerHTML = D.history.slice(0, 12).map(h =>
     `<tr><td>${new Date(h.time).toLocaleString()}</td><td>${h.metric}</td><td>${h.by || ''}</td><td>${h.value}</td></tr>`).join('');
@@ -318,10 +320,11 @@ function setCompanyUI() {
 side.addEventListener('click', e => {
   const b = e.target.closest('button');
   if (!b || b.dataset.c === company) return;
-  flushSys();                                   // save pending systems edits to the company we are leaving
+  if (drDirty && !confirm('You have unsaved systems changes. Switch company and discard them?')) return;
+  drDirty = false;
   company = b.dataset.c;
   sessionStorage.setItem('c', company);
-  SYS = normSys(null); sysCo = company; renderSysTable(); updateSys();
+  SYS = normSys(null); DR = normSys(null); renderSysEdit(); updateSys(); setSt('');
   resetFilter();
   setCompanyUI();
   replay();
@@ -357,15 +360,16 @@ function showBg() {
 })();
 
 /* ================= Systems used across business functions =================
-   Stored in Apps Script's script properties (not in the sheet, not in the history log).
-   Typing updates every card/chart instantly and saves ~1s after the last keystroke. */
+   Latest values live in Apps Script's script properties (read by the dashboard);
+   every save is also logged to a separate Google Sheet by the Apps Script.
+   The dashboard shows SYS (last saved, read-only). Enter Data edits DR (a draft) and sends it with "Save systems". */
 const DV = ['SAP', 'Oracle', 'Microsoft', 'Other'];           // fixed vendors ('Other' always stays last)
 const SYS_PAL = [RED, '#3a3d42', '#9a9da1', '#8c1b2b', '#e98a96', '#5f6368', '#b9a3a7', '#2f6f8f'];
 const SYS_LIGHT = ['#d4d5d8', '#e98a96', '#b9a3a7', '#9a9da1'];  // segments that need dark text
 const vcol = (v, i) => v === 'Other' ? '#d4d5d8' : SYS_PAL[i % SYS_PAL.length];
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const sameName = (a, b) => a.toLowerCase() === b.toLowerCase();
-let SYS = null, sysCo = company, sysTimer = 0, sysFly = {}, sysChain = Promise.resolve();
+let SYS = null, DR = null, drDirty = false, sysSaving = false;   // SYS = saved (dashboard), DR = draft (Enter Data)
 
 function normSys(s) {
   s = s || {};
@@ -378,27 +382,30 @@ function normSys(s) {
   V.forEach(v => { const u = s.uniq && s.uniq[v]; un[v] = (u === '' || u == null) ? '' : n(u); });
   return { vendors: V, funcs: F, grid, uniq: un };
 }
-SYS = normSys(null);
-const sysBusy = () => !!sysTimer || (sysFly[sysCo] || 0) > 0 || $('#systbl').contains(document.activeElement);
+SYS = normSys(null); DR = normSys(null);
 const setSt = t => { $('#sysst').textContent = t ? '\u00b7 ' + t : ''; };
+const clone = o => JSON.parse(JSON.stringify(o));
 
 // totals. "Unique systems" cells left blank fall back to that vendor's column total.
-function sysCalc() {
-  const V = SYS.vendors, F = SYS.funcs, sum = a => a.reduce((x, y) => x + y, 0);
-  const rt = F.map(f => sum(V.map(v => SYS.grid[f][v])));
-  const ct = V.map(v => sum(F.map(f => SYS.grid[f][v])));
-  const un = V.map((v, i) => SYS.uniq[v] === '' ? ct[i] : SYS.uniq[v]);
+function sysCalc(S) {
+  const V = S.vendors, F = S.funcs, sum = a => a.reduce((x, y) => x + y, 0);
+  const rt = F.map(f => sum(V.map(v => S.grid[f][v])));
+  const ct = V.map(v => sum(F.map(f => S.grid[f][v])));
+  const un = V.map((v, i) => S.uniq[v] === '' ? ct[i] : S.uniq[v]);
   return { rt, ct, un, grand: sum(ct), uTot: sum(un), fn: rt.filter(x => x > 0).length, vn: V.filter((v, i) => ct[i] > 0 || un[i] > 0).length };
 }
-
-function renderSysTable() {
-  const V = SYS.vendors, F = SYS.funcs, cV = v => !DV.includes(v), cF = f => !FN.includes(f);
-  const x = (a, i) => `<button type="button" class="x" ${a}="${i}" title="Remove">\u00d7</button>`;
-  $('#systbl').innerHTML = `<thead><tr><th>Business function</th>${V.map((v, i) => `<th>${esc(v)}${cV(v) ? x('data-rv', i) : ''}</th>`).join('')}<th>Total</th></tr></thead><tbody>`
-    + F.map((f, r) => `<tr><td>${esc(f)}${cF(f) ? x('data-rf', r) : ''}</td>${V.map((v, c) => `<td><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-r="${r}" data-c="${c}" value="${SYS.grid[f][v] || ''}"></td>`).join('')}<td data-rt="${r}">0</td></tr>`).join('')
-    + `<tr class="tot"><td>Total</td>${V.map((v, c) => `<td data-ct="${c}">0</td>`).join('')}<td id="gt">0</td></tr>`
-    + `<tr class="uq"><td title="Distinct systems per vendor. Leave blank to use the column total.">Unique systems</td>${V.map((v, i) => `<td><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-u="${i}" value="${SYS.uniq[v] === '' ? '' : SYS.uniq[v]}"></td>`).join('')}<td id="ut">0</td></tr></tbody>`;
+// edit = false: read-only table (dashboard); edit = true: inputs + remove buttons (Enter Data)
+function sysTable(S, edit) {
+  const V = S.vendors, F = S.funcs, C = sysCalc(S);
+  const x = (a, i) => edit ? `<button type="button" class="x" ${a}="${i}" title="Remove">\u00d7</button>` : '';
+  const inp = (v, at, ph) => `<input type="number" min="0" step="1" inputmode="numeric" placeholder="${ph}" ${at} value="${v}">`;
+  return `<thead><tr><th>Business function</th>${V.map((v, i) => `<th>${esc(v)}${DV.includes(v) ? '' : x('data-rv', i)}</th>`).join('')}<th>Total</th></tr></thead><tbody>`
+    + F.map((f, r) => `<tr><td>${esc(f)}${FN.includes(f) ? '' : x('data-rf', r)}</td>${V.map((v, c) => `<td>${edit ? inp(S.grid[f][v] || '', `data-r="${r}" data-c="${c}"`, 0) : S.grid[f][v]}</td>`).join('')}<td data-rt="${r}">${C.rt[r]}</td></tr>`).join('')
+    + `<tr class="tot"><td>Total</td>${V.map((v, c) => `<td data-ct="${c}">${C.ct[c]}</td>`).join('')}<td data-gt>${C.grand}</td></tr>`
+    + `<tr class="uq"><td title="Distinct systems per vendor. Leave blank to use the column total.">Unique systems</td>${V.map((v, i) => `<td>${edit ? inp(S.uniq[v], `data-u="${i}"`, C.ct[i]) : C.un[i]}</td>`).join('')}<td data-ut>${C.uTot}</td></tr></tbody>`;
 }
+const renderSysTable = () => { $('#systbl').innerHTML = sysTable(SYS, false); };            // dashboard (read-only)
+const renderSysEdit = () => { $('#systbl-e').innerHTML = sysTable(DR, true); updateEdit(); }; // Enter Data (editable)
 
 const sysPlug = {
   id: 'sysBar',
@@ -431,12 +438,10 @@ function sysChart(id, cfg) {
   if (charts[id]) { charts[id].data = cfg.data; charts[id].options = cfg.options; charts[id].update(); }
   else charts[id] = new Chart($('#' + id), cfg);
 }
+// Dashboard: table, KPI cards, legend and charts all come from the last SAVED data (SYS)
 function updateSys() {
-  const C = sysCalc(), V = SYS.vendors, F = SYS.funcs, col = V.map(vcol);
-  $$('#systbl [data-rt]').forEach(td => td.textContent = C.rt[+td.dataset.rt]);
-  $$('#systbl [data-ct]').forEach(td => td.textContent = C.ct[+td.dataset.ct]);
-  if ($('#gt')) { $('#gt').textContent = C.grand; $('#ut').textContent = C.uTot; }
-  $$('#systbl input[data-u]').forEach(i => i.placeholder = C.ct[+i.dataset.u]);
+  renderSysTable();
+  const C = sysCalc(SYS), V = SYS.vendors, F = SYS.funcs, col = V.map(vcol);
   count($('#s-tot'), C.uTot); count($('#s-dep'), C.grand); count($('#s-fn'), C.fn); count($('#s-vn'), C.vn);
   $('#s-leg').innerHTML = V.map((v, i) => `<li><i style="background:${col[i]}"></i><span>${esc(v)}</span><b>${C.un[i]}</b></li>`).join('');
   if (typeof Chart === 'undefined') return;
@@ -452,49 +457,57 @@ function updateSys() {
     options: { maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false }, tooltip: { enabled: !empty }, sysDon: { total: C.uTot } } } });
 }
 
-/* ---- editing + saving ---- */
-function schedSave() { setSt('Saving\u2026'); clearTimeout(sysTimer); sysTimer = setTimeout(flushSys, 900); }
-function flushSys() {
-  if (!sysTimer) return; clearTimeout(sysTimer); sysTimer = 0;
-  const co = sysCo, data = JSON.parse(JSON.stringify(SYS));
-  sysFly[co] = (sysFly[co] || 0) + 1;
-  sysChain = sysChain.then(async () => {                      // saves go out one at a time, in order
-    try { const r = await call({ action: 'systems', company: co, systems: data }); if (r.error) throw new Error(r.error); if (!sysTimer) setSt('Saved'); }
-    catch { toast('Systems not saved. Check your connection.'); setSt('Not saved'); }
-    finally { sysFly[co]--; }
-  });
+/* ---- editing (Enter Data) + explicit save ---- */
+function updateEdit() {
+  const C = sysCalc(DR);
+  $$('#systbl-e [data-rt]').forEach(td => td.textContent = C.rt[+td.dataset.rt]);
+  $$('#systbl-e [data-ct]').forEach(td => td.textContent = C.ct[+td.dataset.ct]);
+  $('#systbl-e [data-gt]').textContent = C.grand; $('#systbl-e [data-ut]').textContent = C.uTot;
+  $$('#systbl-e input[data-u]').forEach(i => i.placeholder = C.ct[+i.dataset.u]);
 }
-addEventListener('pagehide', () => { if (sysTimer) { clearTimeout(sysTimer); sysTimer = 0;
-  try { fetch(API, { method: 'POST', keepalive: true, body: JSON.stringify({ key, company: sysCo, action: 'systems', systems: SYS }) }); } catch (e) {} } });
-$('#systbl').addEventListener('input', e => {
+const markDirty = () => { drDirty = true; setSt('Unsaved changes'); };
+const cellVal = t => t.dataset.u != null ? DR.uniq[DR.vendors[+t.dataset.u]] : DR.grid[DR.funcs[+t.dataset.r]][DR.vendors[+t.dataset.c]];
+$('#systbl-e').addEventListener('input', e => {
   const t = e.target; if (t.tagName !== 'INPUT') return;
   const v = t.value === '' ? '' : Math.max(0, Math.floor(+t.value) || 0);
-  if (t.dataset.u != null) SYS.uniq[SYS.vendors[+t.dataset.u]] = v;
-  else SYS.grid[SYS.funcs[+t.dataset.r]][SYS.vendors[+t.dataset.c]] = v === '' ? 0 : v;
-  updateSys(); schedSave();
+  if (t.dataset.u != null) DR.uniq[DR.vendors[+t.dataset.u]] = v;
+  else DR.grid[DR.funcs[+t.dataset.r]][DR.vendors[+t.dataset.c]] = v === '' ? 0 : v;
+  updateEdit(); markDirty();
 });
-$('#systbl').addEventListener('change', e => {          // tidy what is shown once the cell is left
+$('#systbl-e').addEventListener('change', e => {          // tidy what is shown once the cell is left
   const t = e.target; if (t.tagName !== 'INPUT') return;
-  const s = t.dataset.u != null ? SYS.uniq[SYS.vendors[+t.dataset.u]] : SYS.grid[SYS.funcs[+t.dataset.r]][SYS.vendors[+t.dataset.c]];
-  t.value = s === '' || s === 0 ? '' : s;
+  const s = cellVal(t); t.value = s === '' || s === 0 ? '' : s;
 });
-$('#systbl').addEventListener('click', e => {
+$('#systbl-e').addEventListener('click', e => {
   const b = e.target.closest('.x'); if (!b) return;
-  const isV = b.dataset.rv != null, name = isV ? SYS.vendors[+b.dataset.rv] : SYS.funcs[+b.dataset.rf];
+  const isV = b.dataset.rv != null, name = isV ? DR.vendors[+b.dataset.rv] : DR.funcs[+b.dataset.rf];
   if (!confirm('Remove "' + name + '"? Its numbers will be deleted.')) return;
-  if (isV) { SYS.vendors = SYS.vendors.filter(v => v !== name); SYS.funcs.forEach(f => delete SYS.grid[f][name]); delete SYS.uniq[name]; }
-  else { SYS.funcs = SYS.funcs.filter(f => f !== name); delete SYS.grid[name]; }
-  renderSysTable(); updateSys(); schedSave();
+  if (isV) { DR.vendors = DR.vendors.filter(v => v !== name); DR.funcs.forEach(f => delete DR.grid[f][name]); delete DR.uniq[name]; }
+  else { DR.funcs = DR.funcs.filter(f => f !== name); delete DR.grid[name]; }
+  renderSysEdit(); markDirty();
 });
 function addSys(kind) {
-  const inp = $(kind === 'vendors' ? '#nv' : '#nf'), name = inp.value.trim(), list = SYS[kind];
+  const inp = $(kind === 'vendors' ? '#nv' : '#nf'), name = inp.value.trim(), list = DR[kind];
   if (!name) return;
   if (list.some(x => sameName(x, name))) return toast('"' + name + '" is already in the table');
   if (list.length >= (kind === 'vendors' ? 10 : 12)) return toast('Limit reached. Remove one first.');
-  if (kind === 'vendors') { list.splice(list.length - 1, 0, name); SYS.funcs.forEach(f => SYS.grid[f][name] = 0); SYS.uniq[name] = ''; }  // keeps "Other" last
-  else { list.push(name); SYS.grid[name] = {}; SYS.vendors.forEach(v => SYS.grid[name][v] = 0); }
-  inp.value = ''; renderSysTable(); updateSys(); schedSave();
+  if (kind === 'vendors') { list.splice(list.length - 1, 0, name); DR.funcs.forEach(f => DR.grid[f][name] = 0); DR.uniq[name] = ''; }  // keeps "Other" last
+  else { list.push(name); DR.grid[name] = {}; DR.vendors.forEach(v => DR.grid[name][v] = 0); }
+  inp.value = ''; renderSysEdit(); markDirty();
 }
 $('#addv').onclick = () => addSys('vendors'); $('#addf').onclick = () => addSys('funcs');
 $('#nv').onkeydown = e => { if (e.key === 'Enter') addSys('vendors'); }; $('#nf').onkeydown = e => { if (e.key === 'Enter') addSys('funcs'); };
-renderSysTable();
+
+$('#sysSave').onclick = async () => {
+  const co = company, data = clone(DR), btn = $('#sysSave');
+  sysSaving = true; btn.disabled = true; setSt('Saving\u2026');
+  try {
+    const r = await call({ action: 'systems', company: co, systems: data });
+    if (r.error) throw new Error(r.error);
+    if (co === company) { SYS = data; drDirty = false; updateSys(); }
+    setSt('Saved'); toast('Systems saved');
+  } catch { toast('Systems not saved. Check your connection.'); setSt('Not saved'); }
+  finally { sysSaving = false; btn.disabled = false; }
+};
+addEventListener('beforeunload', e => { if (drDirty) { e.preventDefault(); e.returnValue = ''; } });
+renderSysTable(); renderSysEdit();
