@@ -127,6 +127,7 @@ $('#lf').onsubmit = async e => {
   if (await enter()) { sessionStorage.setItem('k', key); start(); } else $('#lerr').textContent = 'Wrong passcode or connection problem';
 };
 function start() {
+  showBg();
   $('#login').hidden = true; $('#app').hidden = false; clearInterval(timer); timer = setInterval(load, 30000); setTimeout(() => map && map.invalidateSize(), 200);
 }
 $$('nav button').forEach(b => b.onclick = () => {
@@ -251,4 +252,14 @@ function replay() {
   const p = $('.page.show'); if (!p) return;
   p.classList.remove('show'); void p.offsetWidth; p.classList.add('show');
   if (map) setTimeout(() => map.invalidateSize(), 150);
+}
+
+/* ---- Background video (shown after login) ---- */
+const bgv = document.createElement('video');
+bgv.id = 'bgv'; bgv.src = 'background.mp4'; bgv.poster = 'background-poster.jpg';
+bgv.muted = true; bgv.loop = true; bgv.playsInline = true; bgv.setAttribute('aria-hidden', 'true'); bgv.hidden = true;
+document.body.prepend(bgv);
+function showBg() {
+  bgv.hidden = false;
+  if (!matchMedia('(prefers-reduced-motion:reduce)').matches) bgv.play().catch(() => {});
 }
