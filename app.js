@@ -9,19 +9,22 @@ const WA = n => 'WhatsApp Image 2026-10-20 at 13.14.01' + n + '.jpeg'; // origin
 // 5th item (optional) = small text under the sidebar logo (defaults to the initials when a 4th item is given)
 const COMPANIES = [['LankaTiles','LT',['lankatiles.png'],['lankatiles-icon.png']],['LankaWallTiles','LW',['lankatiles.png'],['lankatiles-icon.png']],
   ['Rocell - Horana','RH',[WA(' (4)'),'rocell.png'],null,'Horana'],['Rocell - Eheliyagoda','RE',[WA(' (4)'),'rocell.png'],null,'Eheliyagoda'],
-  ['Rocell Bathware','RB',[WA(' (3)'),'rocell-bathware.png']],['Swisstek Aluminium','SA',[WA(' (2)'),'swisstek-aluminium.png']],
-  ['Swisstek Ceylon','SC',[WA(' (1)'),'swisstek-ceylon.png']],['Unidil','UN',[WA(' (5)'),'unidil.png']]];
+  ['Rocell Bathware','RB',[WA(' (3)'),'rocell-bathware.png']],['Swisstek Aluminium','SAL',[WA(' (1)'),'swisstek-ceylon.png'],null,'SAL'],
+  ['Swisstek Ceylon','SC',[WA(' (1)'),'swisstek-ceylon.png'],null,'SC'],['Unidil','UN',[WA(' (5)'),'unidil.png']]];
 
-/* ---- Logo loading: finds the file, trims white margins in the browser ---- */
+/* ---- Logo loading: finds the file, trims margins in the browser ---- */
 const tryLoad = src => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
 const trimLogo = im => {
   try {
     const w = im.naturalWidth, h = im.naturalHeight, cv = document.createElement('canvas'); cv.width = w; cv.height = h;
     const g = cv.getContext('2d'); g.drawImage(im, 0, 0);
     const d = g.getImageData(0, 0, w, h).data; let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    const bg = [d[0], d[1], d[2]], bgA = d[3];            // background = top-left pixel
+    const ink = i => d[i + 3] > 20 && (bgA < 20
+      ? (255 - d[i] > 30 || 255 - d[i + 1] > 30 || 255 - d[i + 2] > 30)
+      : (Math.abs(d[i] - bg[0]) > 40 || Math.abs(d[i + 1] - bg[1]) > 40 || Math.abs(d[i + 2] - bg[2]) > 40));
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const i = (y * w + x) * 4;
-      if (d[i + 3] > 0 && (255 - d[i] > 30 || 255 - d[i + 1] > 30 || 255 - d[i + 2] > 30)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      if (ink((y * w + x) * 4)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
     }
     if (x1 < x0) return im.src;
     const p = 3; x0 = Math.max(x0 - p, 0); y0 = Math.max(y0 - p, 0); x1 = Math.min(x1 + p, w - 1); y1 = Math.min(y1 + p, h - 1);
@@ -242,7 +245,7 @@ $$('nav button').forEach(b => b.onclick = () => {
 if (key) enter().then(ok => (ok ? start() : null));
 
 /* ---- Magnify animation ---- */
-document.querySelectorAll('.brand,nav button,#entry .btn,#lf .btn').forEach(el => el.classList.add('mag'));
+document.querySelectorAll('nav button,#entry .btn,#lf .btn').forEach(el => el.classList.add('mag'));
 document.querySelectorAll('#lf .btn').forEach(el => el.classList.add('mag-solo'));
 
 function dock(box, sel, o) {
@@ -256,7 +259,6 @@ function dock(box, sel, o) {
   box.addEventListener('mouseleave', () => box.querySelectorAll(sel).forEach(b => (b.style.scale = '')));
 }
 if (!matchMedia('(hover:none)').matches) {
-  dock($('header'), '.brand', { max: 1.1, radius: 70, axis: 'x' });
   dock($('nav'), 'nav button', { max: 1.22, radius: 90, axis: 'x' });
   dock($('#entry'), '#entry .mag', { max: 1.12, radius: 90, axis: 'xy' });
 }
@@ -471,10 +473,10 @@ function updateSys() {
     data: { labels: F, datasets: V.map((v, i) => ({ label: v, data: F.map(f => SYS.grid[f][v]), backgroundColor: col[i], borderWidth: 0 })) },
     options: { maintainAspectRatio: false, layout: { padding: { top: 18 } },
       plugins: { legend: { position: 'top', align: 'start', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } } },
-      scales: { x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, font: { size: 11 } } }, y: { stacked: true, beginAtZero: true, grace: '8%', grid: { color: GRID }, ticks: { precision: 0 }, title: { display: true, text: 'Number of systems' } } } } });
+      scales: { x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, font: { size: 11 } } }, y: { stacked: true, beginAtZero: true, grace: '8%', grid: { color: GRID }, ticks: { precision: 0 }, title: { display: true, text: 'Number Of Systems' } } } } });
   const empty = C.uTot === 0;
   sysChart('c-sys-don', { type: 'doughnut', plugins: [donutPlug],
-    data: { labels: empty ? ['No data'] : V, datasets: [{ data: empty ? [1] : C.un, backgroundColor: empty ? ['#ececee'] : col, borderWidth: 0 }] },
+    data: { labels: empty ? ['No Data'] : V, datasets: [{ data: empty ? [1] : C.un, backgroundColor: empty ? ['#ececee'] : col, borderWidth: 0 }] },
     options: { maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false }, tooltip: { enabled: !empty }, sysDon: { total: C.uTot } } } });
 }
 
