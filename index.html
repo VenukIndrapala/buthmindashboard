@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="style.css"></head><body>
 <div id="login"><form id="lf" class="card"><div class="logo">S</div><h2>Enter passcode</h2><input id="pw" type="password" placeholder="Passcode" autofocus><button class="btn">Unlock</button><p id="lerr"></p></form></div>
 <div id="app" hidden>
-<header><div class="brand"><div class="logo">S</div><b>Supply Chain</b></div>
+<header>
 <nav><button class="on" data-p="dash">Dashboard</button><button data-p="entry">Enter Data</button></nav></header>
 <aside id="side"></aside>
 <main id="dash" class="page show">
@@ -17,7 +17,7 @@
 <div class="cat"><small>Material</small><b id="v-spend_material">LKR 0</b><i id="p-spend_material">0% of total</i></div>
 <div class="cat"><small>Services</small><b id="v-spend_services">LKR 0</b><i id="p-spend_services">0% of total</i></div>
 </div></div>
-<div class="card reveal"><span>Warehouses (WHs)</span><h2 id="v-wh">0</h2><p class="sub"><b id="v-wh-l">0</b> Local · <b id="v-wh-o">0</b> Overseas</p><p class="sub" id="v-wh-m"></p></div>
+<div class="card reveal"><span>Warehouses</span><h2 id="v-wh">0</h2><p class="sub"><b id="v-wh-l">0</b> Local · <b id="v-wh-o">0</b> Overseas</p><p class="sub" id="v-wh-m"></p><p class="sub">Refreshed Semi-Annually</p></div>
 <div class="card reveal"><span>Transport fleet vehicles</span><h2 id="v-fleet">0</h2><p class="sub" id="v-fleet-m"></p></div>
 <div class="card reveal"><span>Production locations</span><h2 id="v-loc">0</h2><p class="sub"><b id="v-sl">0</b> Sri Lanka · <b id="v-os">0</b> Overseas</p></div>
 <div class="card fcard reveal"><div class="fh"><h3>Filter by month</h3><button type="button" class="fall on" id="fall">All months</button></div><div class="chips" id="fchips"></div><p class="sub" id="fsum">No data yet.</p></div>
