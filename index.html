@@ -10,17 +10,19 @@
 <main id="dash" class="page show">
 <div class="head reveal"><div><h1 class="ttl"><span class="clogo"></span><span class="cname">Supply Chain Overview</span></h1><p>FY 2025/26 snapshot</p></div><span class="live"><i></i>Live · <em id="upd">--</em></span></div>
 <section class="grid">
-<div class="card hero reveal"><span>Total procurement spend · FY 2025/26</span><h2 id="v-spend">LKR 0</h2></div>
-<div class="card reveal"><span>Warehouses (WHs)</span><h2 id="v-wh">0</h2></div>
-<div class="card reveal"><span>Transport fleet vehicles</span><h2 id="v-fleet">0</h2></div>
+<div class="card hero reveal"><span>Total procurement spend · FY 2025/26</span><h2 id="v-spend">LKR 0</h2><p class="hs" id="v-period"></p></div>
+<div class="card reveal"><span>Warehouses (WHs)</span><h2 id="v-wh">0</h2><p class="sub" id="v-wh-m"></p></div>
+<div class="card reveal"><span>Transport fleet vehicles</span><h2 id="v-fleet">0</h2><p class="sub" id="v-fleet-m"></p></div>
 <div class="card reveal"><span>Production locations</span><h2 id="v-loc">0</h2><p class="sub"><b id="v-sl">0</b> Sri Lanka · <b id="v-os">0</b> Overseas</p></div>
+<div class="card fcard reveal"><div class="fh"><h3>Filter by month</h3><button type="button" class="fall on" id="fall">All months</button></div><div class="chips" id="fchips"></div><p class="sub" id="fsum">No data yet.</p></div>
 <div class="card wide reveal"><h3>Staff by function <em id="v-staff"></em></h3><div class="ch"><canvas id="c-staff"></canvas></div></div>
 <div class="card reveal"><h3>Sri Lanka vs overseas</h3><div class="ch"><canvas id="c-loc"></canvas></div></div>
 <div class="card full reveal"><h3>Production locations map</h3><div id="map"></div></div>
 </section></main>
 <main id="entry" class="page"><div class="head reveal"><div><h1 class="ttl"><span class="clogo"></span><span>Enter Data</span></h1><p>Saved values appear on the dashboard instantly.</p></div></div>
+<div class="card monthbar reveal"><h3>Data month</h3><select id="mo-m" aria-label="Month"></select><select id="mo-y" aria-label="Year"></select><p class="sub" id="mo-note"></p></div>
 <section class="grid forms">
-<form class="card reveal" data-f="spend"><h3>Procurement spend (LKR)</h3><label>Total FY 2025/26<input name="spend" type="number" min="0" step="any" required></label><button class="btn">Save</button></form>
+<form class="card reveal" data-f="spend"><h3>Procurement spend (LKR)</h3><label>Spend for the selected month<input name="spend" type="number" min="0" step="any" required></label><button class="btn">Save</button></form>
 <form class="card reveal" data-f="wh"><h3>Warehouses</h3><label>Number of WHs<input name="warehouses" type="number" min="0" required></label><button class="btn">Save</button></form>
 <form class="card reveal" data-f="fl"><h3>Fleet vehicles</h3><label>Total vehicles<input name="fleet" type="number" min="0" required></label><button class="btn">Save</button></form>
 <form class="card reveal" data-f="st"><h3>Staff per function</h3>
