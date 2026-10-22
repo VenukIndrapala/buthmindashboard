@@ -248,3 +248,12 @@ body,button,.btn,select,input::placeholder,#side button::before{text-transform:c
 #lf .magnifier .glass{cx:27;cy:27;r:8;stroke-width:3}
 #lf .magnifier .handle{x1:32;y1:32;x2:44;y2:44;stroke-width:3}
 @media (prefers-reduced-motion:reduce){#lf .sparks,#lf .burst{display:none}#lf .bar,#lf .magnifier{animation:none}}
+
+/* ---- Login sequence: bar animation -> "Enter Password" slides up -> Unlock slides up once typing starts ---- */
+#lf #phold{grid-area:search;align-self:center;padding:0 30px 0 60px;font:24px/1 system-ui,sans-serif;color:#9a9da1;pointer-events:none;text-align:left;white-space:nowrap;overflow:hidden;transition:opacity .25s;animation:ph-in .55s cubic-bezier(.22,1,.36,1) 4.3s backwards}
+#lf #pw:not(:placeholder-shown)+#phold{opacity:0}
+@keyframes ph-in{from{opacity:0;transform:translateY(18px)}}
+#lf .btn{opacity:0;transform:translateY(22px);visibility:hidden;pointer-events:none;transition:opacity .5s ease,transform .5s cubic-bezier(.22,1,.36,1),background .2s,scale .3s cubic-bezier(.22,1,.36,1)}
+#lf .btn.show{opacity:1;transform:none;visibility:visible;pointer-events:auto}
+#lf .btn.show:hover{transform:translateY(-2px)}
+@media (prefers-reduced-motion:reduce){#lf #phold{animation:none}#lf .btn{transition:none}}
