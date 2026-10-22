@@ -41,6 +41,7 @@ const getLogo = (c, small) => LOGOS[c[0] + (small ? '#s' : '')] || (LOGOS[c[0] +
   return null;
 })());
 const RED = '#C51D34', NOIR = '#2E2E30', GREY = '#808080', GRID = '#e6e6e8';
+Chart.defaults.font.size = Math.max(12, Math.min(17, Math.round(innerWidth / 120)));
 let company = sessionStorage.getItem('c') || COMPANIES[0][0];
 let ACCESS = [];
 let key = sessionStorage.getItem('k') || '', D = null, locs = [], charts = {}, map, layer, timer;
