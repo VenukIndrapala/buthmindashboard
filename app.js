@@ -245,6 +245,13 @@ $$('nav button').forEach(b => b.onclick = () => {
 });
 if (key) enter().then(ok => (ok ? start() : null));
 
+/* ---- Login bar: input unlocks after the intro animation, Unlock button slides in once typing starts ---- */
+(function () {
+  const pw = $('#pw'), btn = $('#lf .btn'), rm = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  setTimeout(() => { pw.disabled = false; pw.focus(); }, rm ? 0 : 4300);
+  pw.addEventListener('input', () => { if (pw.value) btn.classList.add('show'); });
+})();
+
 /* ---- Magnify animation ---- */
 document.querySelectorAll('nav button,#entry .btn,#lf .btn').forEach(el => el.classList.add('mag'));
 document.querySelectorAll('#lf .btn').forEach(el => el.classList.add('mag-solo'));
