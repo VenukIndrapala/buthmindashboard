@@ -44,7 +44,7 @@ const RED = '#C51D34', NOIR = '#2E2E30', GREY = '#808080', GRID = '#e6e6e8';
 Chart.defaults.font.size = Math.max(12, Math.min(17, Math.round(innerWidth / 120)));
 let company = sessionStorage.getItem('c') || COMPANIES[0][0];
 let ACCESS = [];
-let key = sessionStorage.getItem('k') || '', D = null, locs = [], charts = {}, map, layer, timer;
+let key = '', D = null, locs = [], charts = {}, map, layer, timer;
 
 /* ---- Month helpers + filter state ---- */
 const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -232,7 +232,7 @@ $$('form[data-f]').forEach(f => f.onsubmit = async e => {
 
 $('#lf').onsubmit = async e => {
   e.preventDefault(); key = $('#pw').value;
-  if (await enter()) { sessionStorage.setItem('k', key); start(); } else $('#lerr').textContent = 'Wrong passcode or connection problem';
+  if (await enter()) start(); else $('#lerr').textContent = 'Wrong passcode or connection problem';
 };
 function start() {
   showBg();
@@ -243,7 +243,7 @@ $$('nav button').forEach(b => b.onclick = () => {
   $$('.page').forEach(p => p.classList.remove('show')); void document.body.offsetWidth; $('#' + b.dataset.p).classList.add('show');
   if (map) setTimeout(() => map.invalidateSize(), 150);
 });
-if (key) enter().then(ok => (ok ? start() : null));
+sessionStorage.removeItem('k');   // the password is never kept: every refresh asks for it again
 
 /* ---- Login bar: input unlocks after the intro animation, Unlock button slides in once typing starts ---- */
 (function () {
