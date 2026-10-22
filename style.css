@@ -208,7 +208,7 @@ body,button,.btn,select,input::placeholder,#side button::before{text-transform:c
 }
 
 /* ---- Animated password bar (login screen) ---- */
-#lf{width:min(420px,calc(100vw - 32px));text-align:center;--bar:hsl(215,100%,50%)}
+#lf{width:min(420px,calc(100vw - 32px));text-align:center;--bar:#C51D34}
 #lf #search{display:grid;grid-template:"search" 60px / 100%;justify-items:stretch;align-items:stretch}
 #lf #search input{display:block;grid-area:search;-webkit-appearance:none;appearance:none;width:100%;height:100%;margin:0;background:none;padding:0 30px 0 60px;border:none;border-radius:100px;font:24px/1 system-ui,sans-serif;outline-offset:-8px}
 #lf #search svg{grid-area:search;overflow:visible;color:var(--bar);fill:none;stroke:currentColor}
@@ -221,7 +221,7 @@ body,button,.btn,select,input::placeholder,#side button::before{text-transform:c
 #lf .spark:nth-child(3){animation:spark-radius 2.05s 1s both,spark-three-motion 2.03s 1s both}
 @keyframes spark-three-motion{0%{transform:translate(50%,100%) rotate(-40deg) translateX(0%);animation-timing-function:cubic-bezier(.62,.56,1,.54)}30%{transform:translate(40%,70%) rotate(20deg) translateX(20%);animation-timing-function:cubic-bezier(0,.21,.88,.46)}40%{transform:translate(65%,20%) rotate(-50deg) translateX(15%);animation-timing-function:cubic-bezier(0,.24,1,.62)}60%{transform:translate(60%,-40%) rotate(-50deg) translateX(20%);animation-timing-function:cubic-bezier(0,.24,1,.62)}70%{transform:translate(70%,-0%) rotate(-180deg) translateX(20%);animation-timing-function:cubic-bezier(.15,.48,.76,.26)}100%{transform:translate(70%,-0%) rotate(-360deg) translateX(0%) rotate(180deg) translateX(20%)}}
 #lf .burst{stroke-width:3}
-#lf .burst :nth-child(2n){color:#ff783e}#lf .burst :nth-child(3n){color:#ffab00}#lf .burst :nth-child(4n){color:#55e214}#lf .burst :nth-child(5n){color:#82d9f5}
+#lf .burst :nth-child(2n){color:#ff783e}#lf .burst :nth-child(3n){color:#ffab00}#lf .burst :nth-child(4n){color:#55e214}#lf .burst :nth-child(5n){color:#e98a96}
 #lf .circle{r:6}#lf .rect{width:10px;height:10px}
 #lf .triangle{d:path("M0,-6 L7,6 L-7,6 Z");stroke-linejoin:round}
 #lf .plus{d:path("M0,-5 L0,5 M-5,0L 5,0");stroke-linecap:round}
