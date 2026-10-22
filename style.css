@@ -206,3 +206,45 @@ body,button,.btn,select,input::placeholder,#side button::before{text-transform:c
   .ch.tall,.dwrap{height:clamp(280px,34vh,500px)}
   #map{height:clamp(340px,44vh,660px)}
 }
+
+/* ---- Animated password bar (login screen) ---- */
+#lf{width:min(420px,calc(100vw - 32px));text-align:center;--bar:hsl(215,100%,50%)}
+#lf #search{display:grid;grid-template:"search" 60px / 100%;justify-items:stretch;align-items:stretch}
+#lf #search input{display:block;grid-area:search;-webkit-appearance:none;appearance:none;width:100%;height:100%;margin:0;background:none;padding:0 30px 0 60px;border:none;border-radius:100px;font:24px/1 system-ui,sans-serif;outline-offset:-8px}
+#lf #search svg{grid-area:search;overflow:visible;color:var(--bar);fill:none;stroke:currentColor}
+#lf .spark{fill:currentColor;stroke:none;r:15}
+#lf .spark:nth-child(1){animation:spark-radius 2.03s 1s both,spark-one-motion 2s 1s both}
+@keyframes spark-radius{0%{r:0;animation-timing-function:cubic-bezier(0,.3,0,1.57)}30%{r:15;animation-timing-function:cubic-bezier(1,-.39,.68,1.04)}95%{r:8}99%{r:10}99.99%{r:7}100%{r:0}}
+@keyframes spark-one-motion{0%{transform:translate(-20%,50%);animation-timing-function:cubic-bezier(.63,.88,0,1.25)}20%{transform:rotate(-0deg) translate(0%,-50%);animation-timing-function:ease-in}80%{transform:rotate(-230deg) translateX(-20%) rotate(-100deg) translateX(15%);animation-timing-function:linear}100%{transform:rotate(-360deg) translate(30px,100%);animation-timing-function:cubic-bezier(.64,.66,0,.51)}}
+#lf .spark:nth-child(2){animation:spark-radius 2.03s 1s both,spark-two-motion 2.03s 1s both}
+@keyframes spark-two-motion{0%{transform:translate(120%,50%) rotate(-70deg) translateY(0%);animation-timing-function:cubic-bezier(.36,.18,.94,.55)}20%{transform:translate(90%,-80%) rotate(60deg) translateY(-80%);animation-timing-function:cubic-bezier(.16,.77,1,.4)}40%{transform:translate(110%,-50%) rotate(-30deg) translateY(-120%);animation-timing-function:linear}70%{transform:translate(100%,-50%) rotate(120deg) translateY(-100%);animation-timing-function:linear}80%{transform:translate(95%,50%) rotate(80deg) translateY(-150%);animation-timing-function:cubic-bezier(.64,.66,0,.51)}100%{transform:translate(100%,50%) rotate(120deg) translateY(0%)}}
+#lf .spark:nth-child(3){animation:spark-radius 2.05s 1s both,spark-three-motion 2.03s 1s both}
+@keyframes spark-three-motion{0%{transform:translate(50%,100%) rotate(-40deg) translateX(0%);animation-timing-function:cubic-bezier(.62,.56,1,.54)}30%{transform:translate(40%,70%) rotate(20deg) translateX(20%);animation-timing-function:cubic-bezier(0,.21,.88,.46)}40%{transform:translate(65%,20%) rotate(-50deg) translateX(15%);animation-timing-function:cubic-bezier(0,.24,1,.62)}60%{transform:translate(60%,-40%) rotate(-50deg) translateX(20%);animation-timing-function:cubic-bezier(0,.24,1,.62)}70%{transform:translate(70%,-0%) rotate(-180deg) translateX(20%);animation-timing-function:cubic-bezier(.15,.48,.76,.26)}100%{transform:translate(70%,-0%) rotate(-360deg) translateX(0%) rotate(180deg) translateX(20%)}}
+#lf .burst{stroke-width:3}
+#lf .burst :nth-child(2n){color:#ff783e}#lf .burst :nth-child(3n){color:#ffab00}#lf .burst :nth-child(4n){color:#55e214}#lf .burst :nth-child(5n){color:#82d9f5}
+#lf .circle{r:6}#lf .rect{width:10px;height:10px}
+#lf .triangle{d:path("M0,-6 L7,6 L-7,6 Z");stroke-linejoin:round}
+#lf .plus{d:path("M0,-5 L0,5 M-5,0L 5,0");stroke-linecap:round}
+#lf .burst:nth-child(4){transform:translate(30px,100%) rotate(150deg)}
+#lf .burst:nth-child(5){transform:translate(50%,0%) rotate(-20deg)}
+#lf .burst:nth-child(6){transform:translate(100%,50%) rotate(75deg)}
+@keyframes particle-fade{0%,100%{opacity:0}5%,80%{opacity:1}}
+#lf .burst :nth-child(1){animation:particle-fade 600ms 2.95s both,particle-one-move 600ms 2.95s both}
+#lf .burst :nth-child(2){animation:particle-fade 600ms 2.95s both,particle-two-move 600ms 2.95s both}
+#lf .burst :nth-child(3){animation:particle-fade 600ms 2.95s both,particle-three-move 600ms 2.95s both}
+#lf .burst :nth-child(4){animation:particle-fade 600ms 2.95s both,particle-four-move 600ms 2.95s both}
+#lf .burst :nth-child(5){animation:particle-fade 600ms 2.95s both,particle-five-move 600ms 2.95s both}
+#lf .burst :nth-child(6){animation:particle-fade 600ms 2.95s both,particle-six-move 600ms 2.95s both}
+@keyframes particle-one-move{0%{transform:rotate(0deg) translate(-5%) scale(.0001,.0001)}100%{transform:rotate(-20deg) translateX(8%) scale(.5,.5)}}
+@keyframes particle-two-move{0%{transform:rotate(0deg) translate(-5%) scale(.0001,.0001)}100%{transform:rotate(0deg) translateX(8%) scale(.5,.5)}}
+@keyframes particle-three-move{0%{transform:rotate(0deg) translate(-5%) scale(.0001,.0001)}100%{transform:rotate(20deg) translateX(8%) scale(.5,.5)}}
+@keyframes particle-four-move{0%{transform:rotate(0deg) translate(-5%) scale(.0001,.0001)}100%{transform:rotate(-35deg) translateX(12%)}}
+@keyframes particle-five-move{0%{transform:rotate(0deg) translate(-5%) scale(.0001,.0001)}100%{transform:rotate(0deg) translateX(12%)}}
+@keyframes particle-six-move{0%{transform:rotate(0deg) translate(-5%) scale(.0001,.0001)}100%{transform:rotate(35deg) translateX(12%)}}
+#lf .bar{width:100%;height:100%;ry:50%;stroke-width:10;animation:bar-in 900ms 3s both}
+@keyframes bar-in{0%{stroke-dasharray:0 180 0 226 0 405 0 0}100%{stroke-dasharray:0 0 181 0 227 0 405 0}}
+#lf .magnifier{animation:magnifier-in 600ms 3.6s both;transform-box:fill-box}
+@keyframes magnifier-in{0%{transform:translate(20px,8px) rotate(-45deg) scale(.01,.01)}50%{transform:translate(-4px,8px) rotate(-45deg)}100%{transform:translate(0,0) rotate(0deg)}}
+#lf .magnifier .glass{cx:27;cy:27;r:8;stroke-width:3}
+#lf .magnifier .handle{x1:32;y1:32;x2:44;y2:44;stroke-width:3}
+@media (prefers-reduced-motion:reduce){#lf .sparks,#lf .burst{display:none}#lf .bar,#lf .magnifier{animation:none}}
