@@ -173,3 +173,7 @@ body,button,.btn,select,input::placeholder,#side button::before{text-transform:c
 .card h3,.card>span,.kpi span,.hero span,.fh h3{font-size:18px;font-weight:600;line-height:1.25;color:var(--tx)}
 .hero>span{color:#fff}
 .card h3 em{color:#6b6b6f}
+
+/* ---- Hover lift on the procurement spend sub category cards ---- */
+.hero .cat{transition:transform .25s,box-shadow .25s,background .25s}
+.hero .cat:hover{transform:translateY(-5px);background:rgba(255,255,255,.24);box-shadow:0 10px 22px rgba(0,0,0,.18)}
