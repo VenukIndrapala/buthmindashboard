@@ -40,11 +40,15 @@ const getLogo = (c, small) => LOGOS[c[0] + (small ? '#s' : '')] || (LOGOS[c[0] +
   for (const f of files) for (const dir of LOGO_DIRS) { const im = await tryLoad(dir + encodeURI(f)); if (im) return trimLogo(im); }
   return null;
 })());
+/* ---- Access: the password screen is switched off for now. The passcode stays in the Apps Script;
+   to bring the password screen back later, set PASSWORD_REQUIRED to true. ---- */
+const PASSWORD_REQUIRED = false;
+const AUTO_KEY = 'PASTE_PASSCODE_HERE';   // passcode sent automatically while PASSWORD_REQUIRED is false
 const RED = '#C51D34', NOIR = '#2E2E30', GREY = '#808080', GRID = '#e6e6e8';
-Chart.defaults.font.size = Math.max(12, Math.min(17, Math.round(innerWidth / 120)));
+Chart.defaults.font.size = Math.max(16, Math.min(22, Math.round(innerWidth / 92)));
 let company = sessionStorage.getItem('c') || COMPANIES[0][0];
 let ACCESS = [];
-let key = '', D = null, locs = [], charts = {}, map, layer, timer;
+let key = PASSWORD_REQUIRED ? '' : AUTO_KEY, D = null, locs = [], charts = {}, map, layer, timer;
 
 /* ---- Month helpers + filter state ---- */
 const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -236,7 +240,8 @@ $('#lf').onsubmit = async e => {
 };
 function start() {
   showBg();
-  $('#login').hidden = true; $('#app').hidden = false; clearInterval(timer); timer = setInterval(load, 30000); setTimeout(() => map && map.invalidateSize(), 200);
+  const lg = $('#login');
+  if (lg.classList.contains('intro')) { lg.classList.add('out'); setTimeout(() => { lg.hidden = true; }, 500); } else lg.hidden = true; $('#app').hidden = false; clearInterval(timer); timer = setInterval(load, 30000); setTimeout(() => map && map.invalidateSize(), 200);
 }
 $$('nav button').forEach(b => b.onclick = () => {
   $$('nav button').forEach(x => x.classList.toggle('on', x === b));
@@ -441,13 +446,13 @@ const renderSysEdit = () => { $('#systbl-e').innerHTML = sysTable(DR, true); upd
 const sysPlug = {
   id: 'sysBar',
   afterDatasetsDraw(ch) {
-    const g = ch.ctx, ds = ch.data.datasets; g.save(); g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '600 12px Inter,system-ui,sans-serif';
+    const g = ch.ctx, ds = ch.data.datasets; g.save(); g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '600 16px Inter,system-ui,sans-serif';
     ch.data.labels.forEach((_, i) => {
       let tot = 0, top = null;
       ds.forEach((d, k) => { const v = d.data[i]; if (!v) return; tot += v; const el = ch.getDatasetMeta(k).data[i];
-        if (el && Math.abs(el.base - el.y) >= 15) { g.fillStyle = SYS_LIGHT.includes(d.backgroundColor) ? NOIR : '#fff'; g.fillText(v, el.x, (el.y + el.base) / 2); }
+        if (el && Math.abs(el.base - el.y) >= 20) { g.fillStyle = SYS_LIGHT.includes(d.backgroundColor) ? NOIR : '#fff'; g.fillText(v, el.x, (el.y + el.base) / 2); }
         if (el) top = top === null ? el.y : Math.min(top, el.y); });
-      if (tot) { g.fillStyle = NOIR; g.font = '700 13px Inter,system-ui,sans-serif'; g.fillText(tot, ch.getDatasetMeta(0).data[i].x, top - 12); g.font = '600 12px Inter,system-ui,sans-serif'; }
+      if (tot) { g.fillStyle = NOIR; g.font = '700 17px Inter,system-ui,sans-serif'; g.fillText(tot, ch.getDatasetMeta(0).data[i].x, top - 14); g.font = '600 16px Inter,system-ui,sans-serif'; }
     });
     g.restore();
   }
@@ -457,9 +462,9 @@ const donutPlug = {
   afterDatasetsDraw(ch) {
     const o = ch.options.plugins.sysDon || {}, a = ch.chartArea, g = ch.ctx, cx = (a.left + a.right) / 2, cy = (a.top + a.bottom) / 2;
     g.save(); g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillStyle = NOIR; g.font = '700 28px Inter,system-ui,sans-serif'; g.fillText(o.total || 0, cx, cy - 8);
-    g.fillStyle = GREY; g.font = '400 13px Inter,system-ui,sans-serif'; g.fillText('Total Systems', cx, cy + 16);
-    if (o.total) { g.font = '600 12px Inter,system-ui,sans-serif';
+    g.fillStyle = NOIR; g.font = '700 36px Inter,system-ui,sans-serif'; g.fillText(o.total || 0, cx, cy - 12);
+    g.fillStyle = GREY; g.font = '400 17px Inter,system-ui,sans-serif'; g.fillText('Total Systems', cx, cy + 22);
+    if (o.total) { g.font = '600 16px Inter,system-ui,sans-serif';
       ch.getDatasetMeta(0).data.forEach((el, i) => { const v = ch.data.datasets[0].data[i], p = v / o.total * 100; if (p < 5) return;
         const t = el.tooltipPosition(); g.fillStyle = SYS_LIGHT.includes(ch.data.datasets[0].backgroundColor[i]) ? NOIR : '#fff'; g.fillText(Math.round(p) + '%', t.x, t.y); }); }
     g.restore();
@@ -479,9 +484,9 @@ function updateSys() {
   Chart.defaults.color = GREY;
   sysChart('c-sys-bar', { type: 'bar', plugins: [sysPlug],
     data: { labels: F, datasets: V.map((v, i) => ({ label: v, data: F.map(f => SYS.grid[f][v]), backgroundColor: col[i], borderWidth: 0 })) },
-    options: { maintainAspectRatio: false, layout: { padding: { top: 18 } },
+    options: { maintainAspectRatio: false, layout: { padding: { top: 26 } },
       plugins: { legend: { position: 'top', align: 'start', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } } },
-      scales: { x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, font: { size: 11 } } }, y: { stacked: true, beginAtZero: true, grace: '8%', grid: { color: GRID }, ticks: { precision: 0 }, title: { display: true, text: 'Number Of Systems' } } } } });
+      scales: { x: { stacked: true, grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, font: { size: 14 } } }, y: { stacked: true, beginAtZero: true, grace: '8%', grid: { color: GRID }, ticks: { precision: 0 }, title: { display: true, text: 'Number Of Systems' } } } } });
   const empty = C.uTot === 0;
   sysChart('c-sys-don', { type: 'doughnut', plugins: [donutPlug],
     data: { labels: empty ? ['No Data'] : V, datasets: [{ data: empty ? [1] : C.un, backgroundColor: empty ? ['#ececee'] : col, borderWidth: 0 }] },
@@ -542,3 +547,14 @@ $('#sysSave').onclick = async () => {
 };
 addEventListener('beforeunload', e => { if (drDirty) { e.preventDefault(); e.returnValue = ''; } });
 renderSysTable(); renderSysEdit();
+
+/* ---- Intro without password: circles animation, then straight into the dashboard ---- */
+if (!PASSWORD_REQUIRED) {
+  const lg = $('#login');
+  lg.classList.add('intro');
+  const wait = new Promise(r => setTimeout(r, matchMedia('(prefers-reduced-motion:reduce)').matches ? 300 : 3000));
+  Promise.all([enter(), wait]).then(([ok]) => {
+    if (ok) start();
+    else $('#lerr').textContent = 'Could not load the dashboard. Check the connection and the passcode in app.js';
+  });
+}
