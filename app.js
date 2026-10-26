@@ -43,7 +43,7 @@ const getLogo = (c, small) => LOGOS[c[0] + (small ? '#s' : '')] || (LOGOS[c[0] +
 /* ---- Access: the password screen is switched off for now. The passcode stays in the Apps Script;
    to bring the password screen back later, set PASSWORD_REQUIRED to true. ---- */
 const PASSWORD_REQUIRED = false;
-const AUTO_KEY = 'PASTE_PASSCODE_HERE';   // passcode sent automatically while PASSWORD_REQUIRED is false
+const AUTO_KEY = 'https://script.google.com/macros/s/AKfycbxS2vdHDmFbAo9rGI0tggipRpx6ngtcyY0R1P_yDchzlBg2OQz6TImaW3RfYDx4c8ihmQ/exec';   // passcode sent automatically while PASSWORD_REQUIRED is false
 const RED = '#C51D34', NOIR = '#2E2E30', GREY = '#808080', GRID = '#e6e6e8';
 Chart.defaults.font.size = Math.max(16, Math.min(22, Math.round(innerWidth / 92)));
 let company = sessionStorage.getItem('c') || COMPANIES[0][0];
